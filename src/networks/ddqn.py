@@ -9,7 +9,7 @@ import numpy as np
 ############################################################################
 class DDQN(nn.Module):
     """
-    DQN Constructor for the network topology
+    DDQN Constructor for the network topology
     """
     def __init__(
             self, 
