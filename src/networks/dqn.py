@@ -21,7 +21,10 @@ class DQN(nn.Module):
             fc1_dims: int = 64,
             fc2_dims: int = 128,
             name: str = 'DQN'
-        ) -> None:
+    ) -> None:
+        """
+        constructor 
+        """
         super().__init__()
 
         self.name = name
@@ -40,7 +43,7 @@ class DQN(nn.Module):
 
         self.to(self.device)
 
-    def forward(self, state: np.ndarray) -> np.ndarray:
+    def forward(self, state: T.Tensor) -> T.Tensor:
         """
         forward propogation of state through the network
         """
