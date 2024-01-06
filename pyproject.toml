@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "gsp_rl"}]
 
 [tool.poetry.dependencies]
-python = "^3.10.2"
+python = "^3.6"
 torch = "^2.1.2"
 numpy = "^1.26.2"
 matplotlib = "^3.8.2"
