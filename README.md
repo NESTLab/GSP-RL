@@ -19,5 +19,5 @@ Instalition Notes:
 3. Install the package and its dependancies
 
 ```
-poetry intsall
+poetry install
 ```
