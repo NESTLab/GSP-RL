@@ -218,9 +218,7 @@ class NetworkAids(Hyperparameters):
 
     def learn_DDPG(self, networks, intention = False, recurrent = False):
         states, actions, rewards, states_, dones = self.sample_memory(networks)
-        if not intention:
-            actions = actions[:,:2]
-        elif not recurrent:
+        if not recurrent:
             actions = actions.unsqueeze(1)
 
         if intention and recurrent:
