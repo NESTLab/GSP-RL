@@ -19,7 +19,7 @@ class Actor(NetworkAids):
     '''
     def __init__(self, id, n_obs, n_actions, options_per_action, n_agents, n_chars, meta_param_size, 
                  intention = False, recurrent_intention = False, attention = False, gnn=False, 
-                 intention_neighbors = False, intention_look_back = 2, seq_len=5):
+                 gsp_input_size=2+2*2, gsp_output_size = 1, intention_look_back = 2, seq_len=5):
 
         super().__init__()
 
@@ -39,24 +39,18 @@ class Actor(NetworkAids):
         self.recurrent_intention = recurrent_intention
         self.attention_intention = attention
         self.gnn_intention = gnn
-        self.intention_neighbors = intention_neighbors
         self.intention_look_back = intention_look_back
         self.seq_len = seq_len
 
         self.network_input_size = self.n_obs
         if self.intention:
-            self.network_input_size += 1  
-        if self.intention_neighbors:
-            self.intention_network_input = 2+2*2  # [own prox, neighbors prox, own prev gsp, neighbors prev gsp]
-            if self.attention_intention:
-                self.attention_observation = [[0 for _ in range(self.intention_network_input)] for _ in range(self.seq_len)]
-            #TODO write logic for recurrent and attention
-        else:
-            self.intention_network_input = self.n_agents*self.n_chars
-            if self.attention_intention:  
-                self.attention_observation = [[0 for _ in range(2+self.n_agents*self.n_chars)] for _ in range(self.seq_len)]
-            elif self.recurrent_intention:
-                self.recurrent_intention_network_input = self.intention_network_input + self.meta_param_size
+            self.network_input_size += gsp_output_size 
+
+        self.intention_network_input = gsp_input_size
+        if self.attention_intention:  
+            self.attention_observation = [[0 for _ in range(self.intention_network_input)] for _ in range(self.seq_len)]
+        elif self.recurrent_intention:
+            self.recurrent_intention_network_input = self.intention_network_input + self.meta_param_size
             
 
     def build_networks(self, learning_scheme):
@@ -334,7 +328,7 @@ class Actor(NetworkAids):
     
 if __name__=='__main__':
     agent_args = {'id':1, 'n_obs':32, 'n_actions':2, 'options_per_action':3, 'n_agents':1, 'n_chars':2, 'meta_param_size':2, 
-                 'intention':False, 'recurrent_intention':False, 'intention_look_back':2}
+                 'gsp_input_size':2+2*2, 'gsp_output_size':1, 'recurrent_intention':False, 'intention_look_back':2}
     agent = Actor(**agent_args)
     #agent.epsilon = agent.eps_min
     observation = np.zeros(agent_args['n_obs'])
@@ -359,7 +353,7 @@ if __name__=='__main__':
 
     print('[TESTING] DDQN')
     agent_args = {'id':1, 'n_obs':32, 'n_actions':2, 'options_per_action':3, 'n_agents':1, 'n_chars':2, 'meta_param_size':2, 
-                 'intention':False, 'recurrent_intention':False, 'intention_look_back':2}
+                 'gsp_input_size':2+2*2, 'gsp_output_size':1, 'recurrent_intention':False, 'intention_look_back':2}
     agent = Actor(**agent_args)
     #agent.epsilon = agent.eps_min
     observation = np.zeros(agent_args['n_obs'])
@@ -380,7 +374,7 @@ if __name__=='__main__':
     
     print('[TESTING] DDPG and param update')
     agent_args = {'id':1, 'n_obs':32, 'n_actions':2, 'options_per_action':3, 'n_agents':1, 'n_chars':2, 'meta_param_size':2, 
-                 'intention':False, 'recurrent_intention':False, 'intention_look_back':2}
+                 'gsp_input_size':2+2*2, 'gsp_output_size':1, 'recurrent_intention':False, 'intention_look_back':2}
     agent = Actor(**agent_args)
     #agent.epsilon = agent.eps_min
     observation = np.zeros(agent_args['n_obs'])
@@ -398,7 +392,7 @@ if __name__=='__main__':
 
     print('[TESTING] TD3')
     agent_args = {'id':1, 'n_obs':32, 'n_actions':2, 'options_per_action':3, 'n_agents':1, 'n_chars':2, 'meta_param_size':2, 
-                 'intention':False, 'recurrent_intention':False, 'intention_look_back':2}
+                 'gsp_input_size':2+2*2, 'gsp_output_size':1, 'recurrent_intention':False, 'intention_look_back':2}
     agent = Actor(**agent_args)
     #agent.epsilon = agent.eps_min
     observation = np.zeros(agent_args['n_obs'])
