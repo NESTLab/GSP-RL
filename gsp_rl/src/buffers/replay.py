@@ -14,6 +14,7 @@ class ReplayBuffer():
     ) -> None:
         """ Constructor """
         self.mem_size = max_size
+        self._num_actions = num_actions
         self.use_intention = use_intention
         self.mem_ctr = 0
         self.action_type = action_type
@@ -49,7 +50,7 @@ class ReplayBuffer():
             if self.action_type == 'Discrete':
                 self.action_memory[mem_index] = action[0]
             elif self.action_type == 'Continuous':
-                self.action_memory[mem_index] = action[1][0:2]
+                self.action_memory[mem_index] = action[1][0:self._num_actions]
         else:
             self.action_memory[mem_index] = action
         self.reward_memory[mem_index] = reward
