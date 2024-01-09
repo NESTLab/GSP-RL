@@ -47,6 +47,7 @@ class Actor(NetworkAids):
             self.network_input_size += gsp_output_size 
 
         self.intention_network_input = gsp_input_size
+        self.intention_network_output = gsp_output_size
         if self.attention_intention:  
             self.attention_observation = [[0 for _ in range(self.intention_network_input)] for _ in range(self.seq_len)]
         elif self.recurrent_intention:
@@ -108,7 +109,15 @@ class Actor(NetworkAids):
 
     def build_intention_network(self, learning_scheme):
         if self.attention_intention:
-            nn_args = {'embed_size':256, 'num_layers':8, 'heads':8, 'forward_expansion':4, 'dropout':0, 'max_length':self.seq_len}
+            nn_args = {
+                'input_dims':self.intention_network_input,
+                'output_dims':self.intention_network_output,
+                'embed_size':256, 
+                'num_layers':8, 
+                'heads':8, 
+                'forward_expansion':4, 
+                'dropout':0, 
+                'max_length':self.seq_len}
             self.intention_networks = self.make_Attention_Encoder(nn_args)
             self.intention_networks['learning_scheme'] = 'attention'
             self.intention_networks['replay'] = AttentionSequenceReplayBuffer(max_sequence=100, num_observations = self.intention_network_input, seq_len = 5)
