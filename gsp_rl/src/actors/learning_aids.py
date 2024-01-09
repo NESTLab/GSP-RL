@@ -218,8 +218,8 @@ class NetworkAids(Hyperparameters):
 
     def learn_DDPG(self, networks, intention = False, recurrent = False):
         states, actions, rewards, states_, dones = self.sample_memory(networks)
-        if not recurrent:
-            actions = actions.unsqueeze(1)
+
+        actions = actions.unsqueeze(1)
 
         if intention and recurrent:
             meta_param_obs = self.build_ee_input(states, actions, states_, rewards)
