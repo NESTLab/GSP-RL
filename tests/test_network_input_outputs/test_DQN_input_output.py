@@ -1,18 +1,10 @@
-from gsp_rl.src.buffers import ReplayBuffer, SequenceReplayBuffer, AttentionSequenceReplayBuffer
-from gsp_rl.src.actors import Actor
 from gsp_rl.src.networks import (
-    DQN,
-    DDQN,
-    DDPGActorNetwork,
-    DDPGCriticNetwork,
-    TD3ActorNetwork,
-    TD3CriticNetwork,
-    AttentionEncoder
+    DQN
 )
 
 import torch as T
 
-def test_building_network_with_action_options():
+def test_building_network():
     id: int = 1
     lr: float = 1e-4
     input_size: int = 2

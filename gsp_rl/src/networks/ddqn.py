@@ -14,9 +14,8 @@ class DDQN(nn.Module):
             self, 
             id: int,
             lr: float,
-            num_actions: int,
-            observation_size: int,
-            num_ops_per_action: int,
+            input_size: int,
+            output_size: int,
             fc1_dims: int = 64,
             fc2_dims: int = 128,
             name: str = 'DDQN'
@@ -28,13 +27,9 @@ class DDQN(nn.Module):
 
         self.name = name
 
-        output_dims = (num_ops_per_action**num_actions)
-
-        self.fc1 = nn.Linear(observation_size, fc1_dims)
-
+        self.fc1 = nn.Linear(input_size, fc1_dims)
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
-
-        self.fc3 = nn.Linear(fc2_dims, output_dims)
+        self.fc3 = nn.Linear(fc2_dims, output_size)
 
         self.optimizer = optim.Adam(self.parameters(), lr = lr, weight_decay = 1e-4)
 
