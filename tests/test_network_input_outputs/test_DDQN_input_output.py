@@ -7,8 +7,8 @@ import torch as T
 def test_building_network():
     id: int = 1
     lr: float = 1e-4
-    input_size: int = 2
-    output_size: int = 30
+    input_size: int = 30
+    output_size: int = 2
     fc1_dims:int  = 200
     fc2_dims: int = 400
     DQN_Network = DDQN(id, lr, input_size, output_size, fc1_dims, fc2_dims)
@@ -27,8 +27,8 @@ def test_building_network():
 def test_forward():
     id: int = 1
     lr: float = 1e-4
-    input_size: int = 3
-    output_size: int = 30
+    input_size: int = 30
+    output_size: int = 2
     fc1_dims:int  = 200
     fc2_dims: int = 400
     DQN_Network = DDQN(id, lr, input_size, output_size, fc1_dims, fc2_dims)
