@@ -110,7 +110,11 @@ class AttentionEncoder(nn.Module):
     """
     def __init__(
             self,
+            input_size:int,
+            output_size:int, 
+            encode_size: int,
             embed_size: int,
+            hidden_size: int,
             heads: int,
             forward_expansion: float,
             dropout: float,
@@ -121,11 +125,11 @@ class AttentionEncoder(nn.Module):
         # masked_length is the max length of a sequence, so for us it is however long we want our sequences to be when training 
         self.embed_size = embed_size
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
-        self.word_embedding = nn.Sequential(nn.Linear(6, 256),
+        self.word_embedding = nn.Sequential(nn.Linear(input_size, hidden_size),
                                             nn.ReLU(),
-                                            nn.Linear(256, 1))
+                                            nn.Linear(hidden_size, 1))
         self.position_embedding = nn.Embedding(max_length, embed_size) # We need this to propagate the causality
-        self.fc_out = nn.Linear(embed_size*max_length, 1) # Transform to angle
+        self.fc_out = nn.Linear(embed_size*max_length, output_size) # Transform to angle
         self.layers = nn.ModuleList(
             [
                 TransformerBlock(embed_size, heads, dropout=dropout, forward_expansion=forward_expansion,)
