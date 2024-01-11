@@ -15,9 +15,9 @@ class TD3ActorNetwork(nn.Module):
             id: int,
             alpha: float,
             input_dims: int,
+            output_dims: int,
             fc1_dims: int,
             fc2_dims: int,
-            n_actions: int,
             name: str = "TD3_Actor",
             min_max_action: int = 1
     ) -> None:
@@ -26,14 +26,14 @@ class TD3ActorNetwork(nn.Module):
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
-        self.n_actions = n_actions
+        self.output_dims = output_dims
         self.min_max_action = min_max_action
         self.name = name +'_'+str(id)+'_TD3'
 
 
         self.fc1 = nn.Linear(input_dims, self.fc1_dims)
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
-        self.mu = nn.Linear(self.fc2_dims, self.n_actions)
+        self.mu = nn.Linear(self.fc2_dims, self.output_dims)
 
         self.optimizer = optim.Adam(self.parameters(), lr = alpha, weight_decay = 1e-4)
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
@@ -78,9 +78,9 @@ class TD3CriticNetwork(nn.Module):
             id: int,
             beta: float,
             input_dims: int,
+            actor_output_dims: int,
             fc1_dims: int,
             fc2_dims: int,
-            n_actions: int,
             name: str = "TD3_Critic"
     ) -> None:
         """ Constructor """
@@ -88,10 +88,10 @@ class TD3CriticNetwork(nn.Module):
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
-        self.n_actions = n_actions
+        self.actor_output_dims = actor_output_dims
         self.name = name +'_'+str(id)+'_TD3'
 
-        self.fc1 = nn.Linear(self.input_dims + n_actions, self.fc1_dims)
+        self.fc1 = nn.Linear(self.input_dims + self.actor_output_dims, self.fc1_dims)
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
         self.q1 = nn.Linear(self.fc2_dims, 1)
 
