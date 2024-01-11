@@ -40,14 +40,14 @@ def test_building_critic_network():
     id: int = 1
     lr: float = 1e-4
     input_size: int = 30
-    action_size: int = 2
+    actor_output_size: int = 2
     fc1_dims:int  = 200
     fc2_dims: int = 400
-    DQN_Network = DDPGCriticNetwork(id, lr, input_size, action_size, fc1_dims, fc2_dims)
+    DQN_Network = DDPGCriticNetwork(id, lr, input_size, actor_output_size, fc1_dims, fc2_dims)
     for name, param in DQN_Network.named_parameters():
         shape = param.shape
         if name == 'fc1.weight':
-            assert(shape[1] == input_size+action_size)
+            assert(shape[1] == input_size+actor_output_size)
             assert(shape[0] == fc1_dims)
         elif name == 'fc2.weight':
             assert(shape[1] == fc1_dims)
@@ -60,11 +60,11 @@ def test_critic_forward():
     id: int = 1
     lr: float = 1e-4
     input_size: int = 30
-    action_size: int = 2
+    actor_output_size: int = 2
     fc1_dims:int  = 200
     fc2_dims: int = 400
-    DDPG_Critic_Network = DDPGCriticNetwork(id, lr, input_size, action_size, fc1_dims, fc2_dims)
+    DDPG_Critic_Network = DDPGCriticNetwork(id, lr, input_size, actor_output_size, fc1_dims, fc2_dims)
     random_input = T.rand((1, input_size))
-    random_action = T.rand((1, action_size))
+    random_action = T.rand((1, actor_output_size))
     assert(DDPG_Critic_Network(random_input, random_action).shape[1] == 1)
     
