@@ -11,7 +11,7 @@ class EnvironmentEncoder(nn.Module):
     """
     def __init__(
             self,
-            observation_size: int,
+            input_size: int,
             hidden_size: int,
             meta_param_size: int,
             batch_size: int,
@@ -24,13 +24,13 @@ class EnvironmentEncoder(nn.Module):
         super(EnvironmentEncoder, self).__init__()
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
 
-        self.observation = observation_size
+        self.observation = input_size
         self.hidden_size = hidden_size
         self.meta_param_size = meta_param_size
         self.batch_size = batch_size
         self.num_layers = num_layers
 
-        self.ee = nn.LSTM(observation_size, hidden_size, num_layers = num_layers, batch_first=True)
+        self.ee = nn.LSTM(input_size, hidden_size, num_layers = num_layers, batch_first=True)
         self.meta_layer = nn.Linear(hidden_size, meta_param_size)
 
         self.ee_optimizer = optim.Adam(self.ee.parameters(), lr=lr, weight_decay= 1e-4)

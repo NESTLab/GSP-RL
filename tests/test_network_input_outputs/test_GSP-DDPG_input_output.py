@@ -12,8 +12,8 @@ def test_building_actor_network():
     output_size: int = 1
     fc1_dims:int  = 200
     fc2_dims: int = 400
-    DQN_Network = DDPGActorNetwork(id, lr, input_size, output_size, fc1_dims, fc2_dims)
-    for name, param in DQN_Network.named_parameters():
+    DDPG_Actor_Network = DDPGActorNetwork(id, lr, input_size, output_size, fc1_dims, fc2_dims)
+    for name, param in DDPG_Actor_Network.named_parameters():
         shape = param.shape
         if name == 'fc1.weight':
             assert(shape[1] == input_size)
@@ -43,8 +43,8 @@ def test_building_critic_network():
     actor_output_size: int = 1
     fc1_dims:int  = 200
     fc2_dims: int = 400
-    DQN_Network = DDPGCriticNetwork(id, lr, input_size, actor_output_size, fc1_dims, fc2_dims)
-    for name, param in DQN_Network.named_parameters():
+    DDPG_Critic_Network = DDPGCriticNetwork(id, lr, input_size, actor_output_size, fc1_dims, fc2_dims)
+    for name, param in DDPG_Critic_Network.named_parameters():
         shape = param.shape
         if name == 'fc1.weight':
             assert(shape[1] == input_size+actor_output_size)
