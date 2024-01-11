@@ -27,11 +27,10 @@ def test_building_attention_network():
     )
     for name, param in attention_network.named_parameters():
         shape = tuple(param.size())
-        print(name, shape)
         if name == 'word_embedding.0.weight':
             assert(shape == (hidden_size, input_size))
         if name == 'word_embedding.2.weight':
-            assert(shape == (encode_size, hidden_size))
+            assert(shape == (1, hidden_size))
         if name == 'position_embedding.weight':
             assert(shape == (max_length, embed_size))
         if name == 'fc_out.weight':

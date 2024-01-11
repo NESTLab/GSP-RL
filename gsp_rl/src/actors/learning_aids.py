@@ -5,7 +5,6 @@ from gsp_rl.src.networks import (
     DDPGCriticNetwork,
     TD3ActorNetwork,
     TD3CriticNetwork,
-    EnvironmentEncoder,
     AttentionEncoder
 )
 import torch as T
