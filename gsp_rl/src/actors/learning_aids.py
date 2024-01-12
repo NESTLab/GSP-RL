@@ -153,10 +153,11 @@ class NetworkAids(Hyperparameters):
         mu_prime = mu + T.tensor(np.random.normal(scale = self.noise), dtype = T.float).to(networks['actor'].device)
         mu_prime = T.clamp(mu_prime, -self.min_max_action, self.min_max_action)
         self.time_step += 1
-        return mu_prime.cpu().detach().numpy()
+        return mu_prime.unsqueeze(0).cpu().detach().numpy()
     
     def Attention_choose_action(self, observation, networks):
-        return networks['attention'](observation).cpu().detach().numpy()
+        state = T.tensor(observation, dtype = T.float).to(networks['attention'].device)
+        return networks['attention'](state).cpu().detach().numpy()
 
     
     def learn_DQN(self, networks):
