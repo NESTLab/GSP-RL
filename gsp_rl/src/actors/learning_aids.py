@@ -34,7 +34,7 @@ class Hyperparameters:
         self.intn_eps_dec = 1e-5
         self.intn_learning_offset = 1000 #learn after every 1000 action network learning steps
 
-        self.batch_size = 100
+        self.batch_size = 16
         self.mem_size = 100000
         self.replace_target_ctr = 1000
         self.failed = False
