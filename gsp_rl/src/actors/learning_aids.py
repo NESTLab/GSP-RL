@@ -27,7 +27,7 @@ class Hyperparameters:
         self.ee_lr = 0.01
         self.epsilon = 1.0
         self.eps_min = 0.01
-        self.eps_dec = 1e-5
+        self.eps_dec = 5e-5
 
         self.intn_epsilon = 1.0
         self.intn_eps_min = 0.01
@@ -235,7 +235,7 @@ class NetworkAids(Hyperparameters):
             rewards = rewards[:,-1]
 
         target_actions = networks['target_actor'](states_)
-        q_value_ = networks['target_critic']([states_, target_actions])
+        q_value_ = networks['target_critic'](states_, target_actions)
         # import ipdb; ipdb.set_trace()
         #TODO what is dones doing ?
         # q_value_[dones] = 0.0
@@ -243,7 +243,7 @@ class NetworkAids(Hyperparameters):
 
         #Critic Update
         networks['critic'].zero_grad()
-        q_value = networks['critic']([states, actions])
+        q_value = networks['critic'](states, actions)
         value_loss = Loss(q_value, target)
         value_loss.backward()
         networks['critic'].optimizer.step()
@@ -252,10 +252,10 @@ class NetworkAids(Hyperparameters):
         networks['actor'].zero_grad()
         if intention and recurrent:
             new_policy_actions = networks['actor'](states_clone)
-            actor_loss = -networks['critic']([states_clone, new_policy_actions])
+            actor_loss = -networks['critic'](states_clone, new_policy_actions)
         else:
             new_policy_actions = networks['actor'](states)
-            actor_loss = -networks['critic']([states, new_policy_actions])
+            actor_loss = -networks['critic'](states, new_policy_actions)
         actor_loss = actor_loss.mean()
         actor_loss.backward()
         networks['actor'].optimizer.step()

@@ -21,3 +21,19 @@ Instalition Notes:
 ```
 poetry install
 ```
+
+## Testing
+1. Unit Tests: you can run unit tests via the command
+```
+poetry run pytest
+```
+
+2. RL Testing: you can test the RL algorithms on several different gym environments via the examples directory
+```
+$ cd examples/baselines
+$ python cart_pole.py
+$ python lunar_lander.py
+$ python pendulum.py
+```
+
+CartPole and LunarLander are Discrete action space environments and thus can be learned via DQN or DDQN. Pendulum is a Coninuous action space and thus can be learned via DDPG or TD3

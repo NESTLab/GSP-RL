@@ -53,7 +53,7 @@ def test_DDPG_choose_action():
             'id':1,
             'lr':1e-4,
             'input_size':actor_nn_args['input_size'],
-            'actor_output_size':actor_nn_args['output_size'],
+            'output_size':actor_nn_args['output_size'],
             'fc1_dims': 400,
             'fc2_dims':300
         }
@@ -81,7 +81,7 @@ def test_make_TD3_networks():
             'id':1,
             'beta':1e-4,
             'input_size':actor_nn_args['input_size'],
-            'actor_output_size':actor_nn_args['output_size'],
+            'output_size':actor_nn_args['output_size'],
             'fc1_dims': 400,
             'fc2_dims':300
         }

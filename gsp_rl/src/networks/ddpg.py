@@ -98,7 +98,7 @@ class DDPGCriticNetwork(nn.Module):
                  id: int,
                  lr: float,
                  input_size: int,
-                 actor_output_size: int,
+                 output_size: int,
                  fc1_dims: int = 400,
                  fc2_dims: int = 300,
                  name: str = "DDPG_Critic"
@@ -113,7 +113,7 @@ class DDPGCriticNetwork(nn.Module):
 
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
-        self.fc1 = nn.Linear(input_size + actor_output_size, self.fc1_dims)
+        self.fc1 = nn.Linear(input_size + output_size, self.fc1_dims)
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
         self.q = nn.Linear(self.fc2_dims, 1)
 

@@ -17,83 +17,124 @@ class Actor(NetworkAids):
     '''
     This class will be the foundation class for Agent and will hold all specific functions
     '''
-    def __init__(self, id, n_obs, n_actions, options_per_action, n_agents, n_chars, meta_param_size, 
-                 intention = False, recurrent_intention = False, attention = False, gnn=False, 
-                 intention_neighbors = False, intention_look_back = 2, seq_len=5):
-
+    def __init__(
+            self,
+            id: int,
+            input_size: int,
+            output_size: int,  
+            meta_param_size: int, 
+            intention: bool = False,
+            recurrent_intention: bool = False,
+            attention: bool = False, 
+            intention_input_size: int = 6,
+            intention_output_size: int = 1,
+            intention_look_back: int = 2,
+            intention_sequence_length: int = 5
+        ) -> None:
+        """
+        id: int -> the id of the agent
+        input_size: int -> the size of the observation space coming from the environment
+        output_size: int -> the size of the expected action space
+        meta_param_size: int -> the encoding size for LSTM
+        intention: bool -> flag to use DDPG-GSP
+        recurrent_intention: bool -> flag to use RDDPG-GSP
+        attention: bool -> flag to use A-GSP
+        intention_input_size: int -> the input size to the intention network
+        intention_output_size: int -> the output size of the intention network
+        intention_look_back: int -> ...
+        seq_len: int -> length of sequence to use as input to A-GSP
+        """
         super().__init__()
 
         self.id = id
-        self.n_obs = n_obs
-        self.n_actions = n_actions
-        self.options_per_action = options_per_action
+        self.input_size = input_size
+        self.output_size = output_size
 
-        self.n_chars = n_chars
-        self.n_agents = n_agents
         self.meta_param_size = meta_param_size
 
-        self.action_space = [i for i in range(self.options_per_action**self.n_actions)]
+        self.action_space = [i for i in range(self.output_size)]
         self.failure_action_code = len(self.action_space)
 
         self.intention = intention
         self.recurrent_intention = recurrent_intention
         self.attention_intention = attention
-        self.gnn_intention = gnn
-        self.intention_neighbors = intention_neighbors
+        self.intention_network_input = intention_input_size
+        self.intention_network_output = intention_output_size
         self.intention_look_back = intention_look_back
-        self.seq_len = seq_len
+        self.intention_sequence_length = intention_sequence_length
 
-        self.network_input_size = self.n_obs
+        self.network_input_size = self.input_size
         if self.intention:
-            self.network_input_size += 1  
-        if self.intention_neighbors:
-            self.intention_network_input = 2+2*2  # [own prox, neighbors prox, own prev gsp, neighbors prev gsp]
-            if self.attention_intention:
-                self.attention_observation = [[0 for _ in range(self.intention_network_input)] for _ in range(self.seq_len)]
-            #TODO write logic for recurrent and attention
-        else:
-            self.intention_network_input = self.n_agents*self.n_chars
-            if self.attention_intention:  
-                self.attention_observation = [[0 for _ in range(2+self.n_agents*self.n_chars)] for _ in range(self.seq_len)]
-            elif self.recurrent_intention:
-                self.recurrent_intention_network_input = self.intention_network_input + self.meta_param_size
+            self.network_input_size += self.intention_network_output 
+        if self.attention_intention:  
+            self.attention_observation = [[0 for _ in range(self.intention_network_input)] for _ in range(self.intention_sequence_length)]
+        elif self.recurrent_intention:
+            self.recurrent_intention_network_input = self.intention_network_input + self.meta_param_size
             
 
     def build_networks(self, learning_scheme):
         if learning_scheme == 'None':
             self.networks = {'learning_scheme': '', 'learn_step_counter': 0}
         if learning_scheme == 'DQN':
-            nn_args = {'id':self.id, 'lr':self.lr, 'num_actions':self.n_actions, 'observation_size':self.network_input_size,
-                   'num_ops_per_action':self.options_per_action}
+            nn_args = {
+                'id':self.id,
+                'lr':self.lr,
+                'output_size':self.output_size,
+                'input_size':self.network_input_size,
+            }
             self.networks = self.build_DQN(nn_args)
             self.networks['learning_scheme'] = 'DQN'
             self.networks['replay'] = ReplayBuffer(self.mem_size, self.network_input_size, 1, 'Discrete')
             self.networks['learn_step_counter'] = 0
         elif learning_scheme == 'DDQN':
-            nn_args = {'id':self.id, 'lr':self.lr, 'num_actions':self.n_actions, 'observation_size':self.network_input_size,
-                   'num_ops_per_action':self.options_per_action}
+            nn_args = {
+                'id':self.id, 
+                'lr':self.lr, 
+                'output_size':self.output_size, 
+                'input_size':self.network_input_size,
+            }
             self.networks = self.build_DDQN(nn_args)
             self.networks['learning_scheme'] = 'DDQN'
             self.networks['replay'] = ReplayBuffer(self.mem_size, self.network_input_size, 1, 'Discrete')
             self.networks['learn_step_counter'] = 0
         elif learning_scheme == 'DDPG':
-            actor_nn_args = {'id':self.id, 'num_actions':self.n_actions, 'observation_size':self.network_input_size,
-                         'lr': self.lr, 'min_max_action':self.min_max_action}
-            critic_nn_args = {'id':self.id, 'num_actions':self.n_actions, 'lr': self.lr, 'observation_size':self.network_input_size}
+            actor_nn_args = {
+                'id':self.id,
+                'output_size':self.output_size,
+                'input_size':self.network_input_size,
+                'lr': self.lr,
+                'min_max_action':self.min_max_action}
+            critic_nn_args = {
+                'id':self.id,
+                'output_size':self.output_size,
+                'input_size':self.network_input_size,
+                'lr': self.lr
+                }
             self.networks = self.build_DDPG(actor_nn_args, critic_nn_args)
             self.networks['learning_scheme'] = 'DDPG'
-            self.networks['replay'] = ReplayBuffer(self.mem_size, self.network_input_size, self.n_actions, 'Continuous')
-            self.networks['n_actions'] = self.n_actions
+            self.networks['replay'] = ReplayBuffer(self.mem_size, self.network_input_size, self.output_size, 'Continuous')
+            self.networks['output_size'] = self.output_size
             self.networks['learn_step_counter'] = 0
         elif learning_scheme == 'TD3':
-            actor_nn_args = {'id':self.id, 'alpha':self.alpha, 'input_dims': self.network_input_size, 'fc1_dims':400,
-                         'fc2_dims':300, 'n_actions':self.n_actions}
-            critic_nn_args = {'id':self.id, 'beta':self.beta, 'input_dims':self.network_input_size, 'fc1_dims':400,
-                          'fc2_dims':300, 'n_actions':self.n_actions}
+            actor_nn_args = {
+                'id':self.id,
+                'alpha':self.alpha,
+                'input_size': self.network_input_size,
+                'fc1_dims':400,
+                'fc2_dims':300,
+                'output_size':self.output_size
+            }
+            critic_nn_args = {
+                'id':self.id,
+                'beta':self.beta,
+                'input_size':self.network_input_size,
+                'fc1_dims':400,
+                'fc2_dims':300,
+                'output_size':self.output_size}
             self.networks = self.build_TD3(actor_nn_args, critic_nn_args)
             self.networks['learning_scheme'] = 'TD3'
-            self.networks['replay'] = ReplayBuffer(self.mem_size, self.network_input_size, self.n_actions, 'Continuous')
-            self.networks['n_actions'] = self.n_actions
+            self.networks['replay'] = ReplayBuffer(self.mem_size, self.network_input_size, self.output_size, 'Continuous')
+            self.networks['output_size'] = self.output_size
             self.networks['learn_step_counter'] = 0
         else:
             print("removed the exception")
@@ -114,7 +155,7 @@ class Actor(NetworkAids):
 
     def build_intention_network(self, learning_scheme):
         if self.attention_intention:
-            nn_args = {'embed_size':256, 'num_layers':8, 'heads':8, 'forward_expansion':4, 'dropout':0, 'max_length':self.seq_len}
+            nn_args = {'embed_size':256, 'num_layers':8, 'heads':8, 'forward_expansion':4, 'dropout':0, 'max_length':self.intention_sequence_length}
             self.intention_networks = self.make_Attention_Encoder(nn_args)
             self.intention_networks['learning_scheme'] = 'attention'
             self.intention_networks['replay'] = AttentionSequenceReplayBuffer(max_sequence=100, num_observations = self.intention_network_input, seq_len = 5)
@@ -124,26 +165,26 @@ class Actor(NetworkAids):
                 if self.recurrent_intention:
                     self.intention_networks = self.build_RDDPG_intention()
                     self.intention_networks['learning_scheme'] = 'RDDPG'
-                    self.intention_networks['n_actions'] = 1
+                    self.intention_networks['output_size'] = 1
                     self.intention_networks['replay'] = SequenceReplayBuffer(max_sequence=100, num_observations = self.intention_network_input, num_actions = 1, seq_len = 5)
                     self.intention_networks['learn_step_counter'] = 0
                 else:
                     self.intention_networks = self.build_DDPG_intention()
                     self.intention_networks['learning_scheme'] = 'DDPG'
-                    self.intention_networks['n_actions'] = 1
+                    self.intention_networks['output_size'] = 1
                     self.intention_networks['replay'] = ReplayBuffer(self.mem_size, self.intention_network_input, 1, 'Continuous', use_intention = True)
                     self.intention_networks['learn_step_counter'] = 0
             elif learning_scheme == 'TD3':
                 if self.recurrent_intention:
                     self.intention_networks = self.build_RTD3_intention()
                     self.intention_networks['learning_scheme'] = 'RTD3'
-                    self.intention_networks['n_actions']  = 1
+                    self.intention_networks['output_size']  = 1
                     self.intention_networks['replay'] = SequenceReplayBuffer(max_sequence=100, num_observations = self.intention_network_input, num_actions = 1, seq_len = 5)
                     self.intention_networks['learn_step_counter'] = 0
                 else:
                     self.intention_networks = self.build_TD3_intention()
                     self.intention_networks['learning_scheme'] = 'TD3'
-                    self.intention_networks['n_actions'] = 1
+                    self.intention_networks['output_size'] = 1
                     self.intention_networks['replay'] = ReplayBuffer(self.mem_size, self.intention_network_input, 1, 'Continuous', use_intention = True)
                     self.intention_networks['learn_step_counter'] = 0
             else:
@@ -193,11 +234,12 @@ class Actor(NetworkAids):
         elif networks['learning_scheme'] in {'DDPG', 'RDDPG'}:
             actions = self.DDPG_choose_action(observation, networks)
             if not test:
-                actions+=T.normal(0.0, self.noise, size = (1, networks['n_actions'])).to(networks['actor'].device)
+                actions+=T.normal(0.0, self.noise, size = (1, networks['output_size'])).to(networks['actor'].device)
             actions = T.clamp(actions, -self.min_max_action, self.min_max_action)
             return actions[0].cpu().detach().numpy()
         elif networks['learning_scheme'] == 'TD3':
-            return self.TD3_choose_action(observation, networks, self.n_actions)
+            actions = self.TD3_choose_action(observation, networks, self.output_size)
+            return actions[0]
         elif networks['learning_scheme'] == 'attention':
             self.attention_observation.append(observation)
             self.attention_observation.pop(0)
@@ -211,7 +253,8 @@ class Actor(NetworkAids):
             raise Exception('[ERROR]: Learning scheme not recognised for action selection ' + networks['learning_scheme'])
     
     def learn(self, edge_index=None):
-        if self.networks['replay'].mem_ctr < (self.n_agents*self.batch_size + self.batch_size):
+        # TODO Not sure why we have n_agents*batch_size + batch_size
+        if self.networks['replay'].mem_ctr < self.batch_size: # (self.n_agents*self.batch_size + self.batch_size): 
                 return
 
         if self.intention:
@@ -254,7 +297,7 @@ class Actor(NetworkAids):
             self.store_transition(s, a, r, s_, d, self.intention_networks)
 
     def reset_intention_sequence(self):
-        self.intention_sequence = [np.zeros(self.intention_network_input) for i in range(self.seq_len)]
+        self.intention_sequence = [np.zeros(self.intention_network_input) for i in range(self.intention_sequence_length)]
     
     def add_intention_sequence(self, obs):
         self.intention_sequence.append(obs)
@@ -333,23 +376,23 @@ class Actor(NetworkAids):
         
     
 if __name__=='__main__':
-    agent_args = {'id':1, 'n_obs':32, 'n_actions':2, 'options_per_action':3, 'n_agents':1, 'n_chars':2, 'meta_param_size':2, 
+    agent_args = {'id':1, 'input_size':32, 'output_size':2, 'options_per_action':3, 'n_agents':1, 'n_chars':2, 'meta_param_size':2, 
                  'intention':False, 'recurrent_intention':False, 'intention_look_back':2}
     agent = Actor(**agent_args)
     #agent.epsilon = agent.eps_min
-    observation = np.zeros(agent_args['n_obs'])
+    observation = np.zeros(agent_args['input_size'])
 
     
     print('[TESTING] DQN')
     agent.build_networks('DQN')
     agent.networks['learn_step_counter'] = agent.replace_target_ctr
     agent.replace_target_network()
-    observation = np.random.random(size = agent_args['n_obs'])
+    observation = np.random.random(size = agent_args['input_size'])
     done = False
     for i in range(200):
         action = [agent.choose_action(observation, agent.networks)]
         reward = np.random.random()
-        new_obs = np.random.random(size = agent_args['n_obs'])
+        new_obs = np.random.random(size = agent_args['input_size'])
         agent.store_transition(observation, action, reward, new_obs, done, agent.networks)
         observation = new_obs
     print('[LOSS]', agent.learn())
@@ -358,20 +401,20 @@ if __name__=='__main__':
     print(agent.networks['q_next'])
 
     print('[TESTING] DDQN')
-    agent_args = {'id':1, 'n_obs':32, 'n_actions':2, 'options_per_action':3, 'n_agents':1, 'n_chars':2, 'meta_param_size':2, 
+    agent_args = {'id':1, 'input_size':32, 'output_size':2, 'options_per_action':3, 'n_agents':1, 'n_chars':2, 'meta_param_size':2, 
                  'intention':False, 'recurrent_intention':False, 'intention_look_back':2}
     agent = Actor(**agent_args)
     #agent.epsilon = agent.eps_min
-    observation = np.zeros(agent_args['n_obs'])
+    observation = np.zeros(agent_args['input_size'])
     agent.build_networks('DDQN')
     agent.networks['learn_step_counter'] = agent.replace_target_ctr
     agent.replace_target_network()
-    observation = np.random.random(size = agent_args['n_obs'])
+    observation = np.random.random(size = agent_args['input_size'])
     done = False
     for i in range(200):
         action = [agent.choose_action(observation, agent.networks)]
         reward = np.random.random()
-        new_obs = np.random.random(size = agent_args['n_obs'])
+        new_obs = np.random.random(size = agent_args['input_size'])
         agent.store_transition(observation, action, reward, new_obs, done, agent.networks)
         observation = new_obs
     print('[LOSS]', agent.learn())
@@ -379,37 +422,37 @@ if __name__=='__main__':
     print(agent.networks['q_next'])
     
     print('[TESTING] DDPG and param update')
-    agent_args = {'id':1, 'n_obs':32, 'n_actions':2, 'options_per_action':3, 'n_agents':1, 'n_chars':2, 'meta_param_size':2, 
+    agent_args = {'id':1, 'input_size':32, 'output_size':2, 'options_per_action':3, 'n_agents':1, 'n_chars':2, 'meta_param_size':2, 
                  'intention':False, 'recurrent_intention':False, 'intention_look_back':2}
     agent = Actor(**agent_args)
     #agent.epsilon = agent.eps_min
-    observation = np.zeros(agent_args['n_obs'])
+    observation = np.zeros(agent_args['input_size'])
     agent.build_networks('DDPG')
     agent.update_network_parameters()
-    observation = np.random.random(size = agent_args['n_obs'])
+    observation = np.random.random(size = agent_args['input_size'])
     done = False
     for i in range(200):
         action = [None, agent.choose_action(observation, agent.networks)]
         reward = np.random.random()
-        new_obs = np.random.random(size = agent_args['n_obs'])
+        new_obs = np.random.random(size = agent_args['input_size'])
         agent.store_transition(observation, action, reward, new_obs, done, agent.networks)
         observation = new_obs
     print('[LOSS]', agent.learn())
 
     print('[TESTING] TD3')
-    agent_args = {'id':1, 'n_obs':32, 'n_actions':2, 'options_per_action':3, 'n_agents':1, 'n_chars':2, 'meta_param_size':2, 
+    agent_args = {'id':1, 'input_size':32, 'output_size':2, 'options_per_action':3, 'n_agents':1, 'n_chars':2, 'meta_param_size':2, 
                  'intention':False, 'recurrent_intention':False, 'intention_look_back':2}
     agent = Actor(**agent_args)
     #agent.epsilon = agent.eps_min
-    observation = np.zeros(agent_args['n_obs'])
+    observation = np.zeros(agent_args['input_size'])
     agent.build_networks('TD3')
     agent.update_network_parameters()
-    observation = np.random.random(size = agent_args['n_obs'])
+    observation = np.random.random(size = agent_args['input_size'])
     done = False
     for i in range(200):
         action = [None, agent.choose_action(observation, agent.networks)]
         reward = np.random.random()
-        new_obs = np.random.random(size = agent_args['n_obs'])
+        new_obs = np.random.random(size = agent_args['input_size'])
         agent.store_transition(observation, action, reward, new_obs, done, agent.networks)
         observation = new_obs
     print('[LOSS]', agent.learn())

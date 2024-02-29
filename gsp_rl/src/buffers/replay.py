@@ -46,10 +46,11 @@ class ReplayBuffer():
         mem_index = self.mem_ctr % self.mem_size
         self.state_memory[mem_index] = state
         if not self.use_intention:
+            # TODO Why are these different?
             if self.action_type == 'Discrete':
                 self.action_memory[mem_index] = action[0]
             elif self.action_type == 'Continuous':
-                self.action_memory[mem_index] = action[1][0:2]
+                self.action_memory[mem_index] = action[0] #[1][0:2]
         else:
             self.action_memory[mem_index] = action
         self.reward_memory[mem_index] = reward

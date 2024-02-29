@@ -95,7 +95,7 @@ def test_make_DDPG_networks():
             'id':1,
             'lr':1e-4,
             'input_size':actor_nn_args['input_size'],
-            'actor_output_size':actor_nn_args['output_size'],
+            'output_size':actor_nn_args['output_size'],
             'fc1_dims': 400,
             'fc2_dims':300
         }
@@ -113,7 +113,7 @@ def test_make_DDPG_networks():
         for name, param in networks['critic'].named_parameters():
             shape = param.shape
             if name == 'fc1.weight':
-                assert(shape == (actor_nn_args['fc1_dims'], actor_nn_args['input_size']+critic_nn_args['actor_output_size']))
+                assert(shape == (actor_nn_args['fc1_dims'], actor_nn_args['input_size']+critic_nn_args['output_size']))
             elif name == 'fc2.weight':
                 assert(shape == (actor_nn_args['fc2_dims'], actor_nn_args['fc1_dims']))
             elif name == 'fc3.weight':
@@ -137,7 +137,7 @@ def test_make_TD3_networks():
             'id':1,
             'beta':1e-4,
             'input_size':actor_nn_args['input_size'],
-            'actor_output_size':actor_nn_args['output_size'],
+            'output_size':actor_nn_args['output_size'],
             'fc1_dims': 400,
             'fc2_dims':300
         }
@@ -155,7 +155,7 @@ def test_make_TD3_networks():
         for name, param in networks['critic_1'].named_parameters():
             shape = param.shape
             if name == 'fc1.weight':
-                assert(shape == (actor_nn_args['fc1_dims'], actor_nn_args['input_size']+critic_nn_args['actor_output_size']))
+                assert(shape == (actor_nn_args['fc1_dims'], actor_nn_args['input_size']+critic_nn_args['output_size']))
             elif name == 'fc2.weight':
                 assert(shape == (actor_nn_args['fc2_dims'], actor_nn_args['fc1_dims']))
             elif name == 'fc3.weight':
@@ -164,7 +164,7 @@ def test_make_TD3_networks():
         for name, param in networks['critic_2'].named_parameters():
             shape = param.shape
             if name == 'fc1.weight':
-                assert(shape == (actor_nn_args['fc1_dims'], actor_nn_args['input_size']+critic_nn_args['actor_output_size']))
+                assert(shape == (actor_nn_args['fc1_dims'], actor_nn_args['input_size']+critic_nn_args['output_size']))
             elif name == 'fc2.weight':
                 assert(shape == (actor_nn_args['fc2_dims'], actor_nn_args['fc1_dims']))
             elif name == 'fc3.weight':
