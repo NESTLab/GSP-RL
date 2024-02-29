@@ -153,12 +153,22 @@ class Actor(NetworkAids):
     def build_TD3(self, actor_nn_args, critic_nn_args):
         return self.make_TD3_networks(actor_nn_args, critic_nn_args)
 
-    def build_intention_network(self, learning_scheme):
+    def build_intention_network(self, learning_scheme:str | None =None):
         if self.attention_intention:
-            nn_args = {'embed_size':256, 'num_layers':8, 'heads':8, 'forward_expansion':4, 'dropout':0, 'max_length':self.intention_sequence_length}
+            nn_args = {
+                'input_size': self.intention_network_input,
+                'output_size': self.intention_network_output,
+                'encode_size': 2,
+                'embed_size':256, 
+                'hidden_size':256,
+                'heads':8,
+                'forward_expansion':4,
+                'dropout':0,
+                'max_length':self.intention_sequence_length
+            }
             self.intention_networks = self.make_Attention_Encoder(nn_args)
             self.intention_networks['learning_scheme'] = 'attention'
-            self.intention_networks['replay'] = AttentionSequenceReplayBuffer(max_sequence=100, num_observations = self.intention_network_input, seq_len = 5)
+            self.intention_networks['replay'] = AttentionSequenceReplayBuffer(num_observations = self.intention_network_input, seq_len = 5)
             self.intention_networks['learn_step_counter'] = 0
         else:
             if learning_scheme == 'DDPG':
