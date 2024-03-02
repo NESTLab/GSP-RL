@@ -113,7 +113,7 @@ class DDPGCriticNetwork(nn.Module):
 
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
-        self.fc1 = nn.Linear(input_size + output_size, self.fc1_dims)
+        self.fc1 = nn.Linear(input_size, self.fc1_dims)
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
         self.q = nn.Linear(self.fc2_dims, 1)
 

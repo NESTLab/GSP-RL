@@ -195,8 +195,35 @@ def test_build_networks_TD3():
         if name == 'fc3.weights':
             assert(shape == (1, nn_args['fc2_dims']))
 
+def test_build_intention_networks_DDPG():
+    nn_args = {
+            'id':1,
+            'input_size':32,
+            'output_size':2,
+            'meta_param_size':2, 
+            'intention':True,
+            'recurrent_intention':False,
+            'attention': False,
+            'intention_input_size': 6,
+            'intention_output_size': 1,
+            'intention_look_back':2,
+            'intention_sequence_length': 5
+    }
+    actor = Actor(**nn_args)
+    actor.build_networks('DQN')
+    actor.build_intention_network('DDPG')
+    networks = actor.intention_networks
+    for name, param in networks['actor'].named_parameters():
+        shape = tuple(param.size())
+        if name == 'mu.weights':
+            assert(shape == nn_args['output_size'])
+        
+    for name, param in networks['critic'].named_parameters():
+        shape = tuple(param.size())
+        if name == 'q.weights':
+            assert(shape == 1)
 
-def test_build_networks_Attention():
+def test_build_intention_networks_Attention():
     nn_args = {
             'id':1,
             'input_size':32,
@@ -209,16 +236,6 @@ def test_build_networks_Attention():
             'intention_output_size': 1,
             'intention_look_back':2,
             'intention_sequence_length': 5
-    }
-    attention_args = {
-        'input_size': 4,
-        'output_size': 2,
-        'encode_size': 2,
-        'embed_size': 256,
-        'hidden_size': 256,
-        'heads': 8,
-        'forward_expansion': 4,
-        'dropout': 0,
     }
     actor = Actor(**nn_args)
     actor.build_networks('DQN')

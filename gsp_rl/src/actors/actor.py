@@ -28,6 +28,7 @@ class Actor(NetworkAids):
             attention: bool = False, 
             intention_input_size: int = 6,
             intention_output_size: int = 1,
+            intention_min_max_action: float = 1.0,
             intention_look_back: int = 2,
             intention_sequence_length: int = 5
         ) -> None:
@@ -60,6 +61,7 @@ class Actor(NetworkAids):
         self.attention_intention = attention
         self.intention_network_input = intention_input_size
         self.intention_network_output = intention_output_size
+        self.intention_min_max_action = intention_min_max_action
         self.intention_look_back = intention_look_back
         self.intention_sequence_length = intention_sequence_length
 
@@ -158,6 +160,7 @@ class Actor(NetworkAids):
             nn_args = {
                 'input_size': self.intention_network_input,
                 'output_size': self.intention_network_output,
+                'min_max_action': self.intention_min_max_action,
                 'encode_size': 2,
                 'embed_size':256, 
                 'hidden_size':256,
@@ -201,9 +204,19 @@ class Actor(NetworkAids):
                 raise Exception('[Error] Intention learning scheme is not recognised: '+learning_scheme)
 
     def build_DDPG_intention(self):
-        actor_nn_args = {'id':self.id, 'num_actions':1, 'observation_size':self.intention_network_input,
-                         'lr': self.lr, 'min_max_action':self.min_max_action}
-        critic_nn_args = {'id':self.id, 'num_actions':1, 'lr': self.lr, 'observation_size':self.intention_network_input}
+        actor_nn_args = {
+            'id':self.id,
+            'input_size':self.intention_network_input,
+            'output_size':self.intention_network_output,
+            'lr': self.lr,
+            'min_max_action':self.min_max_action
+        }
+        critic_nn_args = {
+            'id':self.id,
+            'input_size':self.intention_network_input+self.intention_network_output,
+            'output_size': 1,
+            'lr': self.lr
+        }
         return self.make_DDPG_networks(actor_nn_args, critic_nn_args)
     
     def build_RDDPG_intention(self):
@@ -262,7 +275,7 @@ class Actor(NetworkAids):
         else:
             raise Exception('[ERROR]: Learning scheme not recognised for action selection ' + networks['learning_scheme'])
     
-    def learn(self, edge_index=None):
+    def learn(self):
         # TODO Not sure why we have n_agents*batch_size + batch_size
         if self.networks['replay'].mem_ctr < self.batch_size: # (self.n_agents*self.batch_size + self.batch_size): 
                 return
@@ -270,7 +283,7 @@ class Actor(NetworkAids):
         if self.intention:
             if self.networks['learn_step_counter'] % self.intn_learning_offset == 0:
                 #print('[DEBUG] Learning Attention', self.networks['learn_step_counter'])
-                self.learn_intention(edge_index)
+                self.learn_intention()
 
         if self.networks['learning_scheme'] == 'DQN':
             self.replace_target_network()
@@ -289,9 +302,9 @@ class Actor(NetworkAids):
             self.update_network_parameters()
             return self.learn_TD3(self.networks)
 
-    def learn_intention(self, edge_index=None):
+    def learn_intention(self):
         if self.intention_networks['learning_scheme'] in {'DDPG', 'RDDPG'}:
-            self.learn_DDPG(self.intention_networks, self.intention, self.recurrent_intention, edge_index)
+            self.learn_DDPG(self.intention_networks, self.intention, self.recurrent_intention)
         elif self.intention_networks['learning_scheme'] == 'TD3':
             self.learn_TD3(self.intention_networks, self.intention, self.recurrent_intention)
         elif self.intention_networks['learning_scheme'] == 'attention':

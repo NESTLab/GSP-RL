@@ -111,7 +111,8 @@ class AttentionEncoder(nn.Module):
     def __init__(
             self,
             input_size:int,
-            output_size:int, 
+            output_size:int,
+            min_max_action: float,
             encode_size: int,
             embed_size: int,
             hidden_size: int,
@@ -123,6 +124,7 @@ class AttentionEncoder(nn.Module):
         """ Constructor """
         super().__init__()
         # masked_length is the max length of a sequence, so for us it is however long we want our sequences to be when training 
+        self.min_max_action = min_max_action
         self.embed_size = embed_size
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.word_embedding = nn.Sequential(nn.Linear(input_size, hidden_size),
@@ -153,7 +155,8 @@ class AttentionEncoder(nn.Module):
         for layer in self.layers:
             mp = layer(out, out, out, mask)
         out = self.fc_out(mp.view(N,-1))
-        out = self.tanh(out) # converts to single number in range (-1, 1) to represent angle
+        # converts to single number in range (-mma, mma)
+        out = self.tanh(out) * self.min_max_action
         return out
     
     def save_checkpoint(self, path: str) -> None:

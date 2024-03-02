@@ -94,12 +94,11 @@ def test_make_DDPG_networks():
         critic_nn_args = {
             'id':1,
             'lr':1e-4,
-            'input_size':actor_nn_args['input_size'],
-            'output_size':actor_nn_args['output_size'],
+            'input_size':actor_nn_args['input_size'] + actor_nn_args['output_size'],
+            'output_size':1,
             'fc1_dims': 400,
             'fc2_dims':300
         }
-
         networks = NA.make_DDPG_networks(actor_nn_args, critic_nn_args)
         for name, param in networks['actor'].named_parameters():
             shape = param.shape
@@ -113,11 +112,11 @@ def test_make_DDPG_networks():
         for name, param in networks['critic'].named_parameters():
             shape = param.shape
             if name == 'fc1.weight':
-                assert(shape == (actor_nn_args['fc1_dims'], actor_nn_args['input_size']+critic_nn_args['output_size']))
+                assert(shape == (critic_nn_args['fc1_dims'], critic_nn_args['input_size']))
             elif name == 'fc2.weight':
-                assert(shape == (actor_nn_args['fc2_dims'], actor_nn_args['fc1_dims']))
+                assert(shape == (critic_nn_args['fc2_dims'], critic_nn_args['fc1_dims']))
             elif name == 'fc3.weight':
-                assert(shape == (1, actor_nn_args['fc2_dims']))
+                assert(shape == (1, critic_nn_args['fc2_dims']))
 
 def test_make_TD3_networks():
     """
@@ -178,6 +177,7 @@ def test_make_Attention_Encoder():
         nn_args = {
             'input_size':np.random.randint(4, 15),
             'output_size':np.random.randint(1, 7),
+            'min_max_action': 1,
             'encode_size':1,
             'embed_size':256,
             'hidden_size':256,

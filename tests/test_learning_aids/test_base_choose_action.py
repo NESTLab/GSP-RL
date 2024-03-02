@@ -98,6 +98,7 @@ def test_Attention_choose_action():
         nn_args = {
             'input_size':np.random.randint(4, 15),
             'output_size':np.random.randint(1, 7),
+            'min_max_action': 1,
             'encode_size':1,
             'embed_size':256,
             'hidden_size':256,
