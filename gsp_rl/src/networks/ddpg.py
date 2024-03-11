@@ -136,7 +136,7 @@ class DDPGCriticNetwork(nn.Module):
     def forward(self, state: T.Tensor, action: T.Tensor) -> T.Tensor:
         """
         Forward Propogation Step"""
-        action_value = self.fc1(T.cat([state, action], 1))
+        action_value = self.fc1(T.cat([state, action], dim = -1))
         action_value = self.relu(action_value)
         action_value = self.fc2(action_value)
         action_value = self.relu(action_value)

@@ -63,6 +63,41 @@ def test_DDPG_choose_action():
         random_input = np.random.uniform(0, 1, actor_nn_args['input_size'])
         assert(tuple(NA.DDPG_choose_action(random_input, networks).shape) == (1, actor_nn_args['output_size']))
 
+    for i in range(10):
+        lstm_nn_args = {
+            'lr':1e-5,
+            'input_size':np.random.randint(4, 50),
+            'output_size':256,
+            'embedding_size':200,
+            'hidden_size':300,
+            'num_layers':5,
+            'batch_size':16
+        }
+
+        ddpg_actor_nn_args = {
+            'id': 1,
+            'lr': 1e-4,
+            'input_size':lstm_nn_args['output_size'],
+            'output_size': np.random.randint(2, 30),
+            'fc1_dims': 400,
+            'fc2_dims': 300
+        }
+        ddpg_critic_nn_args = {
+            'id': 1,
+            'lr': 1e-4,
+            'input_size':lstm_nn_args['output_size'] + ddpg_actor_nn_args['output_size'],
+            'output_size': 1,
+            'fc1_dims': 400,
+            'fc2_dims': 300
+        }
+
+        networks = NA.make_RDDPG_networks(lstm_nn_args, ddpg_actor_nn_args, ddpg_critic_nn_args)
+        networks['learning_scheme'] = 'RDDPG'
+        testing_data = [np.random.randint(1, 25, lstm_nn_args['input_size']) for _ in range(10)]
+        testing_data = np.array(testing_data)
+        action = NA.DDPG_choose_action(testing_data, networks)
+        assert(action.shape[-1] == ddpg_actor_nn_args['output_size'])
+
 def test_make_TD3_networks():
     """
     Test the base code tha makes the TD3 networks

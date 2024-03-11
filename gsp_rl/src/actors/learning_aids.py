@@ -3,8 +3,11 @@ from gsp_rl.src.networks import (
     DDQN,
     DDPGActorNetwork,
     DDPGCriticNetwork,
+    RDDPGActorNetwork,
+    RDDPGCriticNetwork,
     TD3ActorNetwork,
     TD3CriticNetwork,
+    EnvironmentEncoder,
     AttentionEncoder
 )
 import torch as T
@@ -78,8 +81,19 @@ class NetworkAids(Hyperparameters):
                         'target_critic_2': TD3CriticNetwork(**critic_nn_args, name = 'target_critic_2')}
         return TD3_networks
     
-    def make_EE_networks(self, nn_args):
-        return EnvironmentEncoder(**nn_args)
+    def make_RDDPG_networks(self, lstm_nn_args, actor_nn_args, critic_nn_args):
+        shared_ee = EnvironmentEncoder(**lstm_nn_args)
+        RDDPG_networks = {
+            'actor': RDDPGActorNetwork(shared_ee, DDPGActorNetwork(**actor_nn_args, name='actor')),
+            'target_actor': RDDPGActorNetwork(EnvironmentEncoder(**lstm_nn_args), DDPGActorNetwork(**actor_nn_args, name='target_actor')),
+            'critic': RDDPGCriticNetwork(shared_ee, DDPGCriticNetwork(**critic_nn_args, name = 'critic')),
+            'target_critic':RDDPGCriticNetwork(EnvironmentEncoder(**lstm_nn_args), DDPGCriticNetwork(**critic_nn_args, name = 'target_critic'))
+        }
+        return RDDPG_networks
+    
+    def make_Environmental_Encoder(self, nn_args):
+        lstm_networks = {'ee': EnvironmentEncoder(**nn_args)}
+        return lstm_networks
 
     def make_Attention_Encoder(self, nn_args):
         Attention_networks = {'attention': AttentionEncoder(**nn_args)}
@@ -132,13 +146,13 @@ class NetworkAids(Hyperparameters):
     
     def DDPG_choose_action(self, observation, networks):
         state = T.tensor(observation, dtype = T.float).to(networks['actor'].device)
-        if networks['learning_scheme'] == 'RDDPG':
-            s,s_,a,r,d = networks['replay'].get_current_sequence()
-            s,a,s_,r = self.build_initial_ee_input(s,a,s_,r)
-            obs_padded = self.build_ee_input(s,a,s_,r).to(networks['ee'].device)
-            mp = networks['ee'](obs_padded, True)
-            state = T.cat((state, mp))
-            return networks['actor'].forward(state).unsqueeze(0)
+        # if networks['learning_scheme'] == 'RDDPG':
+        #     s,s_,a,r,d = networks['replay'].get_current_sequence()
+        #     s,a,s_,r = self.build_initial_ee_input(s,a,s_,r)
+        #     obs_padded = self.build_ee_input(s,a,s_,r).to(networks['ee'].device)
+        #     mp = networks['ee'](obs_padded, True)
+        #     state = T.cat((state, mp))
+        #     return networks['actor'].forward(state).unsqueeze(0)
         return networks['actor'].forward(state).unsqueeze(0)
         
     

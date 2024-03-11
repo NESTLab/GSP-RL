@@ -4,8 +4,11 @@ from gsp_rl.src.networks import (
     DDQN,
     DDPGActorNetwork,
     DDPGCriticNetwork,
+    RDDPGActorNetwork,
+    RDDPGCriticNetwork,
     TD3ActorNetwork,
     TD3CriticNetwork,
+    EnvironmentEncoder,
     AttentionEncoder
 )
 
@@ -118,6 +121,65 @@ def test_make_DDPG_networks():
             elif name == 'fc3.weight':
                 assert(shape == (1, critic_nn_args['fc2_dims']))
 
+def test_make_RDDPG_networks():
+    """
+    Test the base code tha makes the DDPG networks
+    """
+    for i in range(10):
+        lstm_nn_args = {
+            'lr':1e-5,
+            'input_size':np.random.randint(4, 50),
+            'output_size':256,
+            'embedding_size':200,
+            'hidden_size':300,
+            'num_layers':5,
+            'batch_size':16
+        }
+
+        ddpg_actor_nn_args = {
+            'id': 1,
+            'lr': 1e-4,
+            'input_size':lstm_nn_args['output_size'],
+            'output_size': np.random.randint(2, 30),
+            'fc1_dims': 400,
+            'fc2_dims': 300
+        }
+        ddpg_critic_nn_args = {
+            'id': 1,
+            'lr': 1e-4,
+            'input_size':lstm_nn_args['output_size'] + ddpg_actor_nn_args['output_size'],
+            'output_size': 1,
+            'fc1_dims': 400,
+            'fc2_dims': 300
+        }
+
+        networks = NA.make_RDDPG_networks(lstm_nn_args, ddpg_actor_nn_args, ddpg_critic_nn_args)
+        for name, param in networks['actor'].named_parameters():
+            shape = param.shape
+            if name == 'ee.embedding.wight':
+                assert(shape[0] == lstm_nn_args['embedding_size'])
+                assert(shape[1] == lstm_nn_args['input_size'])
+            elif name == 'ee.meta_layer.weight':
+                assert(shape[0] == lstm_nn_args['output_size'])
+                assert(shape[1] == lstm_nn_args['hidden_size'])
+            elif name == 'actor.fc1.weight':
+                assert(shape[1] == lstm_nn_args['output_size'])
+            elif name == 'actor.mu.weight':
+                assert(shape[0] == ddpg_actor_nn_args['output_size'])
+
+        for name, param in networks['critic'].named_parameters():
+            shape = param.shape
+            if name == 'ee.embedding.wight':
+                assert(shape[0] == lstm_nn_args['embedding_size'])
+                assert(shape[1] == lstm_nn_args['input_size'])
+            elif name == 'ee.meta_layer.weight':
+                assert(shape[0] == lstm_nn_args['output_size'])
+                assert(shape[1] == lstm_nn_args['hidden_size'])
+            elif name == 'critic.fc1.weight':
+                assert(shape[1] == ddpg_critic_nn_args['input_size'])
+            elif name == 'critic.q.weight':
+                assert(shape[0] == 1)
+
 def test_make_TD3_networks():
     """
     Test the base code tha makes the TD3 networks
@@ -168,6 +230,26 @@ def test_make_TD3_networks():
                 assert(shape == (actor_nn_args['fc2_dims'], actor_nn_args['fc1_dims']))
             elif name == 'fc3.weight':
                 assert(shape == (1, actor_nn_args['fc2_dims']))
+
+def test_make_Environmental_Encoder():
+    lstm_nn_args = {
+            'lr':1e-5,
+            'input_size':np.random.randint(4, 50),
+            'output_size':256,
+            'embedding_size':200,
+            'hidden_size':300,
+            'num_layers':5,
+            'batch_size':16
+        }
+    networks = NA.make_Environmental_Encoder(lstm_nn_args)
+    for name, param in networks['ee'].named_parameters():
+        shape = param.shape
+        if name == 'ee.embedding.wight':
+            assert(shape[0] == lstm_nn_args['embedding_size'])
+            assert(shape[1] == lstm_nn_args['input_size'])
+        elif name == 'ee.meta_layer.weight':
+            assert(shape[0] == lstm_nn_args['output_size'])
+            assert(shape[1] == lstm_nn_args['hidden_size'])
 
 def test_make_Attention_Encoder():
     """
