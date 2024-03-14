@@ -90,7 +90,7 @@ class SequenceReplayBuffer:
         s_ = np.zeros((batch_size,self.seq_len,self.num_observations))
         a = np.zeros((batch_size,self.seq_len,self.num_actions))
         r = np.zeros((batch_size, self.seq_len), dtype= np.float64)
-        d = np.zeros((batch_size, self.seq_len), dtype= np.bool)
+        d = np.zeros((batch_size, self.seq_len), dtype= np.bool_)
         for i,j in enumerate(samples_indices):
             s[i] = self.state_memory[j:j+self.seq_len]
             s_[i] = self.new_state_memory[j:j+self.seq_len]

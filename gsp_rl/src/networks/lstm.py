@@ -11,9 +11,10 @@ class EnvironmentEncoder(nn.Module):
     """
     def __init__(
             self,
-            observation_size: int,
+            input_size: int,
+            output_size: int,
             hidden_size: int,
-            meta_param_size: int,
+            embedding_size: int,
             batch_size: int,
             num_layers: int,
             lr: float
@@ -21,36 +22,38 @@ class EnvironmentEncoder(nn.Module):
         """
         Constructor
         """
-        super(EnvironmentEncoder, self).__init__()
+        super().__init__()
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
 
-        self.observation = observation_size
+        self.input_size = input_size
         self.hidden_size = hidden_size
-        self.meta_param_size = meta_param_size
+        self.output_size = output_size
+        self.embedding_size = embedding_size
         self.batch_size = batch_size
         self.num_layers = num_layers
 
-        self.ee = nn.LSTM(observation_size, hidden_size, num_layers = num_layers, batch_first=True)
-        self.meta_layer = nn.Linear(hidden_size, meta_param_size)
+        self.embedding = nn.Linear(self.input_size, self.embedding_size)
+        self.ee = nn.LSTM(
+            self.embedding_size,
+            self.hidden_size,
+            num_layers = self.num_layers,
+            batch_first=True
+        )
+        self.meta_layer = nn.Linear(self.hidden_size, self.output_size)
 
-        self.ee_optimizer = optim.Adam(self.ee.parameters(), lr=lr, weight_decay= 1e-4)
+        #self.ee_optimizer = optim.Adam(self.ee.parameters(), lr=lr, weight_decay= 1e-4)
         self.name = "Enviroment_Encoder"
         self.to(self.device)
 
     def forward(
             self,
             observation: T.Tensor,
-            choose_action: bool = False
     ) -> None:
         """ Forward Propogation Step """
-        hidden0 = (T.zeros(self.num_layers, self.batch_size, self.hidden_size).to(self.device), T.zeros(self.num_layers, self.batch_size, self.hidden_size).to(self.device))
-        lstm_out , (h_out, _) = self.ee(observation,hidden0)
-        lstm_out = h_out.view(-1,self.hidden_size)
-        meta_parameters = self.meta_layer(lstm_out)
-        meta_parameters = T.relu(meta_parameters)
-        if choose_action:
-            meta_parameters = meta_parameters[-1]
-        return meta_parameters
+        embed = self.embedding(observation)
+        lstm_out, _ = self.ee(embed.view(embed.shape[0], 1, -1))
+        out = self.meta_layer(lstm_out)
+        return out
 
     def save_checkpoint(self, path: str, intention: bool = False) -> None:
         """ Save Model """

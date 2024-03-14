@@ -18,9 +18,11 @@ class DDPGActorNetwork(nn.Module):
     def __init__(
             self,
             id: int,
-            num_actions: int,
-            observation_size: int,
             lr: float,
+            input_size: int,
+            output_size: int,
+            fc1_dims: int = 400,
+            fc2_dims: int = 300,
             name: str = "DDPG_Actor",
             min_max_action: float = 1.0
     ) -> None:
@@ -31,16 +33,14 @@ class DDPGActorNetwork(nn.Module):
 
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
 
-        output_dims = num_actions
-
         self.min_max_action = min_max_action
+        self.lr = lr
+        self.fc1_dims = fc1_dims
+        self.fc2_dims = fc2_dims
 
-        self.fc1_dims = 400
-        self.fc2_dims = 300
-
-        self.fc1 = nn.Linear(observation_size, self.fc1_dims)
+        self.fc1 = nn.Linear(input_size, self.fc1_dims)
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
-        self.mu = nn.Linear(self.fc2_dims, output_dims)
+        self.mu = nn.Linear(self.fc2_dims, output_size)
 
         self.relu = nn.ReLU()
         self.tanh = nn.Tanh()
@@ -96,21 +96,24 @@ class DDPGCriticNetwork(nn.Module):
     """
     def __init__(self,
                  id: int,
-                 num_actions: int,
-                 observation_size: int,
                  lr: float,
+                 input_size: int,
+                 output_size: int,
+                 fc1_dims: int = 400,
+                 fc2_dims: int = 300,
                  name: str = "DDPG_Critic"
     ):
         """
-        Constuctor
+        - input_size: This should match the input size to your actor network
+        - actor_ouput_size: This should be the same as the output_size of your actor network
         """
         super().__init__()
 
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
-
-        self.fc1_dims = 400
-        self.fc2_dims = 300
-        self.fc1 = nn.Linear(observation_size+num_actions, self.fc1_dims)
+        self.lr = lr
+        self.fc1_dims = fc1_dims
+        self.fc2_dims = fc2_dims
+        self.fc1 = nn.Linear(input_size, self.fc1_dims)
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
         self.q = nn.Linear(self.fc2_dims, 1)
 
@@ -130,11 +133,10 @@ class DDPGCriticNetwork(nn.Module):
         self.fc2.weight.data = fanin_init(self.fc2.weight.data.size())
         self.q.weight.data.uniform_(-init_w, init_w)
 
-    def forward(self, X: T.Tensor) -> T.Tensor:
+    def forward(self, state: T.Tensor, action: T.Tensor) -> T.Tensor:
         """
         Forward Propogation Step"""
-        state, action = X
-        action_value = self.fc1(T.cat([state, action], 1))
+        action_value = self.fc1(T.cat([state, action], dim = -1))
         action_value = self.relu(action_value)
         action_value = self.fc2(action_value)
         action_value = self.relu(action_value)
