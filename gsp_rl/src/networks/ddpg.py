@@ -34,7 +34,7 @@ class DDPGActorNetwork(nn.Module):
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
 
         self.min_max_action = min_max_action
-
+        self.lr = lr
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
 
@@ -110,7 +110,7 @@ class DDPGCriticNetwork(nn.Module):
         super().__init__()
 
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
-
+        self.lr = lr
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
         self.fc1 = nn.Linear(input_size, self.fc1_dims)

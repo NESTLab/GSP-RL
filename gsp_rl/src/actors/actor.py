@@ -19,6 +19,7 @@ class Actor(NetworkAids):
     '''
     def __init__(
             self,
+            network: str,
             id: int,
             input_size: int,
             output_size: int,  
@@ -26,6 +27,9 @@ class Actor(NetworkAids):
             intention: bool = False,
             recurrent_intention: bool = False,
             attention: bool = False, 
+            recurrent_hidden_size: int = 256,
+            recurrent_embedding_size: int = 256,
+            recurrent_num_layers = 5,
             intention_input_size: int = 6,
             intention_output_size: int = 1,
             intention_min_max_action: float = 1.0,
@@ -59,6 +63,9 @@ class Actor(NetworkAids):
         self.intention = intention
         self.recurrent_intention = recurrent_intention
         self.attention_intention = attention
+        self.recurrent_hidden_size = recurrent_hidden_size
+        self.recurrent_embedding_size = recurrent_embedding_size
+        self.recurrent_num_layers = recurrent_num_layers
         self.intention_network_input = intention_input_size
         self.intention_network_output = intention_output_size
         self.intention_min_max_action = intention_min_max_action
@@ -71,7 +78,18 @@ class Actor(NetworkAids):
         if self.attention_intention:  
             self.attention_observation = [[0 for _ in range(self.intention_network_input)] for _ in range(self.intention_sequence_length)]
         elif self.recurrent_intention:
-            self.recurrent_intention_network_input = self.intention_network_input + self.meta_param_size
+            self.recurrent_intention_network_input = self.intention_network_input
+
+        self.build_networks(network)
+        # print("--------- NETWORK ARCHITECTURE ----------")
+        # print('[NETWORKS]')
+        # print(self.networks)
+        if intention is not None:
+            if attention:
+                self.build_intention_network('attention')
+            self.build_intention_network('DDPG')
+            # print('[INTENTION NETWORKS]')
+            # print(self.intention_networks)
             
 
     def build_networks(self, learning_scheme):
@@ -109,11 +127,38 @@ class Actor(NetworkAids):
             critic_nn_args = {
                 'id':self.id,
                 'output_size':self.output_size,
-                'input_size':self.network_input_size,
+                'input_size':self.network_input_size + actor_nn_args['output_size'],
                 'lr': self.lr
                 }
             self.networks = self.build_DDPG(actor_nn_args, critic_nn_args)
             self.networks['learning_scheme'] = 'DDPG'
+            self.networks['replay'] = ReplayBuffer(self.mem_size, self.network_input_size, self.output_size, 'Continuous')
+            self.networks['output_size'] = self.output_size
+            self.networks['learn_step_counter'] = 0
+        elif learning_scheme == "RDDPG":
+            lstm_nn_args = {
+                'lr': self.lr,
+                'input_size': self.network_input_size,
+                'output_size': self.meta_param_size,
+                'embedding_size': self.recurrent_embedding_size,
+                'hidden_size': self.recurrent_hidden_size,
+                'num_layers': self.recurrent_num_layers,
+                'batch_size': self.batch_size
+            }
+            actor_nn_args = {
+                'id':self.id,
+                'output_size':self.output_size,
+                'input_size':lstm_nn_args['output_size'],
+                'lr': self.lr,
+                'min_max_action':self.min_max_action}
+            critic_nn_args = {
+                'id':self.id,
+                'output_size':self.output_size,
+                'input_size':lstm_nn_args['output_size'] + actor_nn_args['output_size'],
+                'lr': self.lr
+                }
+            self.networks = self.build_RDDPG()
+            self.networks['learning_scheme'] = 'RDDPG'
             self.networks['replay'] = ReplayBuffer(self.mem_size, self.network_input_size, self.output_size, 'Continuous')
             self.networks['output_size'] = self.output_size
             self.networks['learn_step_counter'] = 0
@@ -129,7 +174,7 @@ class Actor(NetworkAids):
             critic_nn_args = {
                 'id':self.id,
                 'beta':self.beta,
-                'input_size':self.network_input_size,
+                'input_size':self.network_input_size+actor_nn_args['output_size'],
                 'fc1_dims':400,
                 'fc2_dims':300,
                 'output_size':self.output_size}
@@ -152,10 +197,14 @@ class Actor(NetworkAids):
     def build_DDPG(self, actor_nn_args, critic_nn_args):
         return self.make_DDPG_networks(actor_nn_args, critic_nn_args)
 
+    def build_RDDPG(self, lstm_nn_args, actor_nn_args, critic_nn_args):
+        return self.make_RDDPG_networks(lstm_nn_args, actor_nn_args, critic_nn_args)
+
     def build_TD3(self, actor_nn_args, critic_nn_args):
         return self.make_TD3_networks(actor_nn_args, critic_nn_args)
 
     def build_intention_network(self, learning_scheme:str | None =None):
+        self.intention_networks = None
         if self.attention_intention:
             nn_args = {
                 'input_size': self.intention_network_input,
@@ -179,7 +228,9 @@ class Actor(NetworkAids):
                     self.intention_networks = self.build_RDDPG_intention()
                     self.intention_networks['learning_scheme'] = 'RDDPG'
                     self.intention_networks['output_size'] = 1
-                    self.intention_networks['replay'] = SequenceReplayBuffer(max_sequence=100, num_observations = self.intention_network_input, num_actions = 1, seq_len = 5)
+                    #self.intention_networks['replay'] = ReplayBuffer(self.mem_size, self.intention_network_input, 1, 'Continuous', use_intention = True)
+                    self.intention_networks['replay'] = SequenceReplayBuffer(self.mem_size, self.intention_network_input, self.intention_network_output, self.intention_sequence_length)
+                    #SequenceReplayBuffer(max_sequence=100, num_observations = self.intention_network_input, num_actions = 1, seq_len = 5)
                     self.intention_networks['learn_step_counter'] = 0
                 else:
                     self.intention_networks = self.build_DDPG_intention()
@@ -220,13 +271,33 @@ class Actor(NetworkAids):
         return self.make_DDPG_networks(actor_nn_args, critic_nn_args)
     
     def build_RDDPG_intention(self):
-        actor_nn_args = {'id':self.id, 'num_actions':1, 'observation_size':self.recurrent_intention_network_input,
-                         'lr': self.lr, 'min_max_action':self.min_max_action}
-        critic_nn_args = {'id':self.id, 'num_actions':1, 'lr': self.lr, 'observation_size':self.recurrent_intention_network_input}
-        ee_nn_args = {'observation_size': 18, 'hidden_size':self.meta_param_size, 'meta_param_size': self.meta_param_size, 'batch_size': self.batch_size, 'num_layers':1, 'lr': self.ee_lr}
-        Networks = self.make_DDPG_networks(actor_nn_args, critic_nn_args)
-        Networks['ee'] = self.make_EE_networks(ee_nn_args)
-        return Networks
+        lstm_nn_args = {
+            'lr': self.lr,
+            'input_size': self.intention_network_input,
+            'output_size': self.meta_param_size,
+            'embedding_size': self.recurrent_embedding_size,
+            'hidden_size': self.recurrent_hidden_size,
+            'num_layers': self.recurrent_num_layers,
+            'batch_size': self.batch_size
+        }
+        actor_nn_args = {
+            'id':self.id,
+            'input_size':lstm_nn_args['output_size'],
+            'output_size':self.intention_network_output,
+            'lr': self.lr,
+            'min_max_action':self.min_max_action
+        }
+        critic_nn_args = {
+            'id':self.id,
+            'input_size':lstm_nn_args['output_size']+actor_nn_args['output_size'],
+            'output_size': 1,
+            'lr': self.lr
+        }
+        print('[INPUT]: ', lstm_nn_args['input_size'])
+        print('[LSTM OUTPUT]', lstm_nn_args['output_size'])
+        print('[DDPG INPUT]', actor_nn_args['input_size'])
+        print('[DDPG OUTPUT]', actor_nn_args['output_size'])
+        return self.make_RDDPG_networks(lstm_nn_args, actor_nn_args, critic_nn_args)
 
     def update_network_parameters(self, tau = None):
         if tau is None:
@@ -303,8 +374,10 @@ class Actor(NetworkAids):
             return self.learn_TD3(self.networks)
 
     def learn_intention(self):
-        if self.intention_networks['learning_scheme'] in {'DDPG', 'RDDPG'}:
+        if self.intention_networks['learning_scheme'] in {'DDPG'}:
             self.learn_DDPG(self.intention_networks, self.intention, self.recurrent_intention)
+        elif self.intention_networks['learning_scheme'] in {'RDDPG'}:
+            self.learn_RDDPG(self.intention_networks, self.intention, self.recurrent_intention)
         elif self.intention_networks['learning_scheme'] == 'TD3':
             self.learn_TD3(self.intention_networks, self.intention, self.recurrent_intention)
         elif self.intention_networks['learning_scheme'] == 'attention':

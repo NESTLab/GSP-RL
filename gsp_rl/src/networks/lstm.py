@@ -41,7 +41,7 @@ class EnvironmentEncoder(nn.Module):
         )
         self.meta_layer = nn.Linear(self.hidden_size, self.output_size)
 
-        self.ee_optimizer = optim.Adam(self.ee.parameters(), lr=lr, weight_decay= 1e-4)
+        #self.ee_optimizer = optim.Adam(self.ee.parameters(), lr=lr, weight_decay= 1e-4)
         self.name = "Enviroment_Encoder"
         self.to(self.device)
 

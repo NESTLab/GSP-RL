@@ -36,8 +36,9 @@ class Hyperparameters:
         self.intn_eps_min = 0.01
         self.intn_eps_dec = 1e-5
         self.intn_learning_offset = 1000 #learn after every 1000 action network learning steps
+        self.intn_batch_size = 16
 
-        self.batch_size = 16
+        self.batch_size = 64
         self.mem_size = 100000
         self.replace_target_ctr = 1000
         self.failed = False
@@ -145,14 +146,11 @@ class NetworkAids(Hyperparameters):
         return T.argmax(action_values).item()
     
     def DDPG_choose_action(self, observation, networks):
-        state = T.tensor(observation, dtype = T.float).to(networks['actor'].device)
-        # if networks['learning_scheme'] == 'RDDPG':
-        #     s,s_,a,r,d = networks['replay'].get_current_sequence()
-        #     s,a,s_,r = self.build_initial_ee_input(s,a,s_,r)
-        #     obs_padded = self.build_ee_input(s,a,s_,r).to(networks['ee'].device)
-        #     mp = networks['ee'](obs_padded, True)
-        #     state = T.cat((state, mp))
-        #     return networks['actor'].forward(state).unsqueeze(0)
+        if networks['learning_scheme'] == 'RDDPG':
+            # if using LSTM we need to add an extra dimension
+            state = T.tensor(np.array(observation), dtype=T.float).to(networks['actor'].device)
+        else:
+            state = T.tensor(observation, dtype = T.float).to(networks['actor'].device)
         return networks['actor'].forward(state).unsqueeze(0)
         
     
@@ -236,23 +234,11 @@ class NetworkAids(Hyperparameters):
             actions = actions[:,:2]
         elif not recurrent:
             actions = actions.unsqueeze(1)
-
-        if intention and recurrent:
-            meta_param_obs = self.build_ee_input(states, actions, states_, rewards)
-            meta_param = networks['ee'](meta_param_obs)
-            meta_param_clone = T.clone(meta_param).detach()
-            states = self.build_ac_input(states, meta_param)
-            states_ = self.build_ac_input(states_, meta_param_clone)
-            states_clone = T.clone(states).detach()
-            #reformatting inputs
-            actions = actions[:,-1,:]
-            rewards = rewards[:,-1]
-
+        elif recurrent:
+            actions = actions.view(self.batch_size, 1, 1)
         target_actions = networks['target_actor'](states_)
         q_value_ = networks['target_critic'](states_, target_actions)
-        # import ipdb; ipdb.set_trace()
-        #TODO what is dones doing ?
-        # q_value_[dones] = 0.0
+
         target = T.unsqueeze(rewards, 1) + self.gamma*q_value_
 
         #Critic Update
@@ -264,12 +250,9 @@ class NetworkAids(Hyperparameters):
 
         #Actor Update
         networks['actor'].zero_grad()
-        if intention and recurrent:
-            new_policy_actions = networks['actor'](states_clone)
-            actor_loss = -networks['critic'](states_clone, new_policy_actions)
-        else:
-            new_policy_actions = networks['actor'](states)
-            actor_loss = -networks['critic'](states, new_policy_actions)
+
+        new_policy_actions = networks['actor'](states)
+        actor_loss = -networks['critic'](states, new_policy_actions)
         actor_loss = actor_loss.mean()
         actor_loss.backward()
         networks['actor'].optimizer.step()
@@ -277,6 +260,55 @@ class NetworkAids(Hyperparameters):
         networks['learn_step_counter'] += 1
 
         return actor_loss.item()
+    
+    def learn_RDDPG(self, networks, intention = False, recurrent = False):
+        s, a, r, s_, d = self.sample_memory(networks)
+        batch_loss = 0
+        if self.intention:
+            batch_size = self.intn_batch_size
+        else:
+            batch_size = self.batch_size
+        for batch in range(batch_size):
+            states = s[batch]
+            actions = a[batch]
+            rewards = r[batch]
+            states_ = s_[batch]
+            dones = d[batch]
+            if not intention:
+                actions = actions[:,:2]
+            elif not recurrent:
+                actions = actions.unsqueeze(1)
+            elif recurrent:
+                actions = actions.view(actions.shape[0], 1, actions.shape[1])
+            target_actions = networks['target_actor'](states_)
+            q_value_ = networks['target_critic'](states_, target_actions)
+            # print('[REWARDS]', rewards.shape, T.unsqueeze(rewards, 1).shape)
+            # print('[Q_VALUE_]', q_value_.shape, T.squeeze(T.squeeze(q_value_, -1), -1).shape)
+            target = T.unsqueeze(rewards, 1) + self.gamma*T.squeeze(q_value_, -1)
+            # print(target.shape)
+
+            #Critic Update
+            networks['critic'].zero_grad()
+            q_value = networks['critic'](states, actions)
+            # print('[Q_VALUE]', q_value.shape)
+            # print('[TARGET]', target.shape)
+            value_loss = Loss(T.squeeze(q_value, -1), target)
+            value_loss.backward()
+            networks['critic'].optimizer.step()
+
+            #Actor Update
+            networks['actor'].zero_grad()
+
+            new_policy_actions = networks['actor'](states)
+            actor_loss = -networks['critic'](states, new_policy_actions)
+            actor_loss = actor_loss.mean()
+            actor_loss.backward()
+            batch_loss += actor_loss.item()
+            networks['actor'].optimizer.step()
+
+            networks['learn_step_counter'] += 1
+
+        return batch_loss
 
     def learn_TD3(self, networks, intention = False):
         states, actions, rewards, states_, dones = self.sample_memory(networks)
@@ -330,7 +362,7 @@ class NetworkAids(Hyperparameters):
         return actor_loss.item()
 
     def learn_attention(self, networks):
-        if networks['replay'].mem_ctr < self.batch_size:
+        if networks['replay'].mem_ctr < self.intn_batch_size:
             return 0
         observations, labels = self.sample_attention_memory(networks)
         networks['learn_step_counter'] += 1
@@ -340,47 +372,6 @@ class NetworkAids(Hyperparameters):
         loss.backward()
         networks['attention'].optimizer.step()
         return loss.item()
-
-
-    def build_initial_state_ee_input(self,state):
-        #Padding single inputs, EE takes in batches.
-        stateP = self.pad_input(state,self.seq_len,self.batch_size)
-        return stateP
-
-
-#TODO here for later use to build (s,a,s',r,done) input
-    def build_initial_ee_input(self,s,a,s_,r):
-        s = T.from_numpy(s)
-        s_ = T.from_numpy(s_)
-        a = T.from_numpy(a)
-        r = T.from_numpy(r).unsqueeze(-1)
-        #Padding single inputs, EE takes in batches.
-        stateP = self.pad_input(s,0,self.batch_size)
-        actionP = self.pad_input(a,0,self.batch_size)
-        state_P = self.pad_input(s_,0,self.batch_size)
-        rewardP = F.pad(r.unsqueeze(0), pad=(0,0,0,0,self.batch_size-1,0), value=0)
-        return stateP, actionP, state_P, rewardP
-
-    def pad_input(self,s,seqlen,batch):
-        s = s.unsqueeze(0)
-        s = F.pad(s,pad=(0,0,0,0,batch-1,0))
-        return s
-        
-    def build_ee_input(self, s, a, s_, r):
-        observation = T.cat((s, a, s_), -1)
-        if r.dim() == 0:
-            r.reshape([1])
-        if r.dim() == 2:
-            r = r.unsqueeze(-1)
-        observation = T.cat((observation, r), -1)
-        if observation.dim() == 1:
-            observation = T.reshape(observation, (1, 1, observation.shape[0]))
-        return observation.to(T.float32)
-    
-    def build_ac_input(self, state, mp):
-        state = state[:, -1, :]
-        obs = T.cat((state, mp), 1)
-        return obs
         
     def decrement_epsilon(self):
         self.epsilon = max(self.epsilon-self.eps_dec, self.eps_min)

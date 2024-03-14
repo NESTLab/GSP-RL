@@ -3,6 +3,7 @@ from gsp_rl.src.actors import Actor
 def test_build_networks_DQN():
     nn_args = {
             'id':1,
+            'network': 'DQN',
             'input_size':32,
             'output_size':2,
             'meta_param_size':2, 
@@ -15,7 +16,6 @@ def test_build_networks_DQN():
             'intention_sequence_length': 5
     }
     actor = Actor(**nn_args)
-    actor.build_networks('DQN')
     networks = actor.networks
     for name, param in networks['q_eval'].named_parameters():
         shape = tuple(param.size())
@@ -38,6 +38,7 @@ def test_build_networks_DQN():
 def test_build_networks_DDQN():
     nn_args = {
             'id':1,
+            'network': 'DDQN',
             'input_size':32,
             'output_size':2,
             'meta_param_size':2, 
@@ -50,7 +51,6 @@ def test_build_networks_DDQN():
             'intention_sequence_length': 5
     }
     actor = Actor(**nn_args)
-    actor.build_networks('DDQN')
     networks = actor.networks
     for name, param in networks['q_eval'].named_parameters():
         shape = tuple(param.size())
@@ -73,6 +73,7 @@ def test_build_networks_DDQN():
 def test_build_networks_DDPG():
     nn_args = {
             'id':1,
+            'network': 'DDPG',
             'input_size':32,
             'output_size':2,
             'meta_param_size':2, 
@@ -85,7 +86,6 @@ def test_build_networks_DDPG():
             'intention_sequence_length': 5
     }
     actor = Actor(**nn_args)
-    actor.build_networks('DDPG')
     networks = actor.networks
     for name, param in networks['actor'].named_parameters():
         shape = tuple(param.size())
@@ -127,6 +127,7 @@ def test_build_networks_DDPG():
 def test_build_networks_TD3():
     nn_args = {
             'id':1,
+            'network': 'TD3',
             'input_size':32,
             'output_size':2,
             'meta_param_size':2, 
@@ -139,7 +140,6 @@ def test_build_networks_TD3():
             'intention_sequence_length': 5
     }
     actor = Actor(**nn_args)
-    actor.build_networks('TD3')
     networks = actor.networks
     for name, param in networks['actor'].named_parameters():
         shape = tuple(param.size())
@@ -198,6 +198,7 @@ def test_build_networks_TD3():
 def test_build_intention_networks_DDPG():
     nn_args = {
             'id':1,
+            'network': 'DQN',
             'input_size':32,
             'output_size':2,
             'meta_param_size':2, 
@@ -210,8 +211,6 @@ def test_build_intention_networks_DDPG():
             'intention_sequence_length': 5
     }
     actor = Actor(**nn_args)
-    actor.build_networks('DQN')
-    actor.build_intention_network('DDPG')
     networks = actor.intention_networks
     for name, param in networks['actor'].named_parameters():
         shape = tuple(param.size())
@@ -226,6 +225,7 @@ def test_build_intention_networks_DDPG():
 def test_build_intention_networks_Attention():
     nn_args = {
             'id':1,
+            'network': 'DQN',
             'input_size':32,
             'output_size':2,
             'meta_param_size':2, 
@@ -238,8 +238,6 @@ def test_build_intention_networks_Attention():
             'intention_sequence_length': 5
     }
     actor = Actor(**nn_args)
-    actor.build_networks('DQN')
-    actor.build_intention_network()
     networks = actor.intention_networks
     for name, param in networks['attention'].named_parameters():
         shape = tuple(param.size())

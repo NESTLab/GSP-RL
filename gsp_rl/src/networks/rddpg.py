@@ -1,5 +1,6 @@
 import torch as T
 import torch.nn as nn
+import torch.optim as optim
 import numpy as np
 """
 Note that the EE for the actor and the critic are the same network
@@ -22,6 +23,7 @@ class RDDPGActorNetwork(nn.Module):
         self.ee = environmental_encoder
         self.actor = ddpg_actor
         self.device = self.ee.device
+        self.optimizer = optim.Adam(self.parameters(), lr = ddpg_actor.lr, weight_decay = 1e-4)
 
     def forward(self, x: T.Tensor) -> T.Tensor:
         encoding = self.ee(x)
@@ -45,6 +47,7 @@ class RDDPGCriticNetwork(nn.Module):
         self.ee = environmental_encoder
         self.critic = ddpg_critic
         self.device = self.ee.device
+        self.optimizer = optim.Adam(self.parameters(), lr = ddpg_critic.lr, weight_decay = 1e-4)
     
     def forward(self, state: T.Tensor, action: T.Tensor) -> T.Tensor:
         encoding = self.ee(state)

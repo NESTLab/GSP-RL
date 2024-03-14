@@ -92,9 +92,11 @@ def test_DDPG_choose_action():
         }
 
         networks = NA.make_RDDPG_networks(lstm_nn_args, ddpg_actor_nn_args, ddpg_critic_nn_args)
+        print('[NETWORKS]', networks)
         networks['learning_scheme'] = 'RDDPG'
         testing_data = [np.random.randint(1, 25, lstm_nn_args['input_size']) for _ in range(10)]
-        testing_data = np.array(testing_data)
+
+        # print('[TESTING_DATA]', testing_data.shape)
         action = NA.DDPG_choose_action(testing_data, networks)
         assert(action.shape[-1] == ddpg_actor_nn_args['output_size'])
 
