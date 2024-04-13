@@ -314,16 +314,19 @@ class NetworkAids(Hyperparameters):
             actions.unsqueeze(1)
 
         target_actions = networks['target_actor'].forward(states_)
+        print('[TARGET ACTIONS 1]', target_actions)
         target_actions = target_actions + T.clamp(T.tensor(np.random.normal(scale = 0.2)), -0.5, 0.5)
+        print('[TARGET ACTIONS 2]', target_actions)
         target_actions = T.clamp(target_actions, -self.min_max_action, self.min_max_action)
-
+        print('[TARGET ACTIONS 3]', target_actions)
+        
         q1_ = networks['target_critic_1'].forward(states_, target_actions)
         q2_ = networks['target_critic_2'].forward(states_, target_actions)
 
         print('[Q1_]', q1_)
         print('[Q2_]', q2_)
         print('[STATES_]', states)
-        print('[TARGET ACTIONS]', target_actions)
+        
 
         q1 = networks['critic_1'].forward(states, actions).squeeze() # need to squeeze to change shape from [100,1] to [100] to match target shape
         q2 = networks['critic_2'].forward(states, actions).squeeze()
