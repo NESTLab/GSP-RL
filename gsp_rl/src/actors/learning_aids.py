@@ -300,7 +300,6 @@ class NetworkAids(Hyperparameters):
         return batch_loss
 
     def learn_TD3(self, networks, gsp = False):
-        print('LEARNING TD3')
         states, actions, rewards, states_, dones = self.sample_memory(networks)
 
         if not gsp:
@@ -342,7 +341,6 @@ class NetworkAids(Hyperparameters):
 
         if networks['learn_step_counter'] % self.update_actor_iter != 0:
             return 0, 0
-        print('LEARNING ACTOR')
         #print('Actor Learn Step')
         networks['actor'].optimizer.zero_grad()
         actor_q1_loss = networks['critic_1'].forward(states, networks['actor'].forward(states))
