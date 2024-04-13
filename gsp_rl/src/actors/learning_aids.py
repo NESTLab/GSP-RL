@@ -151,6 +151,7 @@ class NetworkAids(Hyperparameters):
         else:
             state = T.tensor(observation, dtype = T.float).to(networks['actor'].device)
             mu = networks['actor'].forward(state).to(networks['actor'].device)
+        print('[LEARNING] MU', mu)
         mu_prime = mu + T.tensor(np.random.normal(scale = self.noise), dtype = T.float).to(networks['actor'].device)
         mu_prime = T.clamp(mu_prime, -networks['actor'].min_max_action, networks['actor'].min_max_action)
         self.time_step += 1
