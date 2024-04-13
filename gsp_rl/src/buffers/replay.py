@@ -45,7 +45,6 @@ class ReplayBuffer():
         """
         mem_index = self.mem_ctr % self.mem_size
         self.state_memory[mem_index] = state
-        print('[BUFFER] Actions', action)
         self.action_memory[mem_index] = action
         self.reward_memory[mem_index] = reward
         self.new_state_memory[mem_index] = state_

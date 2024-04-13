@@ -225,21 +225,15 @@ class NetworkAids(Hyperparameters):
             actions = actions.unsqueeze(1)
         elif recurrent:
             actions = actions.view(self.batch_size, 1, 1)
-        print('[STATES]', states)
         target_actions = networks['target_actor'](states_)
-        print('[TARGET ACTIONS]', target_actions)
         q_value_ = networks['target_critic'](states_, target_actions)
-        print('[Q VALUE]', q_value_)
 
         target = T.unsqueeze(rewards, 1) + self.gamma*q_value_
-        print('[TARGET]', target)
 
         #Critic Update
         networks['critic'].optimizer.zero_grad()
         q_value = networks['critic'](states, actions)
-        print('[Q VALUE]', q_value)
         value_loss = Loss(q_value, target)
-        print('[VALUE LOSS]', value_loss)
         value_loss.backward()
         networks['critic'].optimizer.step()
 
@@ -307,33 +301,17 @@ class NetworkAids(Hyperparameters):
 
     def learn_TD3(self, networks, gsp = False):
         states, actions, rewards, states_, dones = self.sample_memory(networks)
-        print('[TYPES]')
-        print('states:', type(states))
-        print('actions:', type(actions))
-        print('rewards:', type(rewards))
-        print('new states:', type(states_))
-    
-
         if not gsp:
             actions = actions[:,:2]
         else:
             actions.unsqueeze(1)
 
         target_actions = networks['target_actor'].forward(states_)
-        print('[TARGET ACTIONS 1]', target_actions)
         target_actions = target_actions + T.clamp(T.tensor(np.random.normal(scale = 0.2)), -0.5, 0.5)
-        print('[TARGET ACTIONS 2]', target_actions)
         target_actions = T.clamp(target_actions, -self.min_max_action, self.min_max_action)
-        print('[TARGET ACTIONS 3]', target_actions)
 
         q1_ = networks['target_critic_1'].forward(states_, target_actions)
         q2_ = networks['target_critic_2'].forward(states_, target_actions)
-
-        print('[Q1_]', q1_)
-        print('[Q2_]', q2_)
-
-        print('[STATES]', states)
-        print('[ACTIONS]', actions)
 
         q1 = networks['critic_1'].forward(states, actions).squeeze() # need to squeeze to change shape from [100,1] to [100] to match target shape
         q2 = networks['critic_2'].forward(states, actions).squeeze()
@@ -351,13 +329,10 @@ class NetworkAids(Hyperparameters):
         networks['critic_1'].optimizer.zero_grad()
         networks['critic_2'].optimizer.zero_grad()
 
-        print('[Q1]', q1)
-        print('[Q2]', q2)
-        print('[Target]', target)
         q1_loss = F.mse_loss(target, q1)
         q2_loss = F.mse_loss(target, q2)
         critic_loss = q1_loss + q2_loss
-        print('[Critic LOSS]', critic_loss)
+
         critic_loss.backward()
         networks['critic_1'].optimizer.step()
         networks['critic_2'].optimizer.step()
