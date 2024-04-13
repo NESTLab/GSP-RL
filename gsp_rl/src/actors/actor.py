@@ -23,7 +23,8 @@ class Actor(NetworkAids):
             id: int,
             input_size: int,
             output_size: int,  
-            meta_param_size: int, 
+            min_max_action: int,
+            meta_param_size: int,
             intention: bool = False,
             recurrent_intention: bool = False,
             attention: bool = False, 
@@ -55,6 +56,7 @@ class Actor(NetworkAids):
         self.input_size = input_size
         self.output_size = output_size
 
+        self.min_max_action = min_max_action
         self.meta_param_size = meta_param_size
 
         self.action_space = [i for i in range(self.output_size)]
@@ -169,7 +171,8 @@ class Actor(NetworkAids):
                 'input_size': self.network_input_size,
                 'fc1_dims':400,
                 'fc2_dims':300,
-                'output_size':self.output_size
+                'output_size':self.output_size,
+                'min_max_action': self.min_max_action
             }
             critic_nn_args = {
                 'id':self.id,
