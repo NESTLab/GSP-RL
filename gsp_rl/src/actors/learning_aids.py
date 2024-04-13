@@ -149,6 +149,7 @@ class NetworkAids(Hyperparameters):
                                            size = (n_actions,))
                           ).to(networks['actor'].device)
         else:
+            print('[LEARNING] DONE WITH WARMUP', self.time_step)
             state = T.tensor(observation, dtype = T.float).to(networks['actor'].device)
             mu = networks['actor'].forward(state).to(networks['actor'].device)
         print('[LEARNING] MU', mu)
