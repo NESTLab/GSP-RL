@@ -336,9 +336,13 @@ class NetworkAids(Hyperparameters):
         networks['critic_1'].optimizer.zero_grad()
         networks['critic_2'].optimizer.zero_grad()
 
+        print('[Q1]', q1)
+        print('[Q2]', q2)
+        print('[Target]', target)
         q1_loss = F.mse_loss(target, q1)
         q2_loss = F.mse_loss(target, q2)
         critic_loss = q1_loss + q2_loss
+        print('[Critic LOSS]', critic_loss)
         critic_loss.backward()
         networks['critic_1'].optimizer.step()
         networks['critic_2'].optimizer.step()
