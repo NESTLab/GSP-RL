@@ -90,8 +90,6 @@ class Actor(NetworkAids):
             if attention:
                 self.build_gsp_network('attention')
             self.build_gsp_network('DDPG')
-        
-        print(self.networks)
             
     def build_networks(self, learning_scheme):
         if learning_scheme == 'None':
