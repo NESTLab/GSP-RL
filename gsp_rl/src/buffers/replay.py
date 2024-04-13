@@ -67,6 +67,7 @@ class ReplayBuffer():
         batch = np.random.choice(max_mem, batch_size, replace = False)
         states = self.state_memory[batch]
         actions = self.action_memory[batch]
+        print('[BUFFER] Actions', actions)
         rewards = self.reward_memory[batch]
         next_states = self.new_state_memory[batch]
         dones = self.terminal_memory[batch]
