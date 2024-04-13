@@ -47,7 +47,8 @@ class TD3ActorNetwork(nn.Module):
         print('[TD3] Min Max', self.min_max_action)
         prob = F.relu(self.fc1(state))
         prob = F.relu(self.fc2(prob))
-        mu = self.min_max_action * T.tanh(self.mu(prob))
+
+        mu = T.tanh(self.mu(prob))
 
         return mu
 
