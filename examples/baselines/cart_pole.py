@@ -57,9 +57,6 @@ the next time step based on the carts current position
 if __name__ == "__main__":
     ## Discrete Action Spaces
     env = gym.make('CartPole-v1')
-
-    # Network Learning Scheme
-    network = "DDQN"
     
     # Build the actor with the following arguments
     containing_folder = os.path.dirname(os.path.realpath(__file__))

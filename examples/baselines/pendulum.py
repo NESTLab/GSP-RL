@@ -1,5 +1,7 @@
 import numpy as np
 import math
+import os
+import yaml
 
 import gymnasium as gym
 import matplotlib.pyplot as plt
@@ -11,14 +13,33 @@ if __name__ == "__main__":
     ## Continuous Action Spaces
     env = gym.make('Pendulum-v1', g=9.81)
 
-    # Network Architecutre
-    # network = "DDPG"
-    network = "TD3"
+    containing_folder = os.path.dirname(os.path.realpath(__file__))
+    config_path = os.path.join(containing_folder, 'pendulum_config.yml')
 
-    actor = Actor(1, 3, 1, 2)
-    actor.build_networks(network)
+    with open(config_path, 'r') as file:
+        config = yaml.safe_load(file)
+
+    nn_args = {
+            'network': config['LEARNING_SCHEME'],
+            'id':1,
+            'input_size':config['INPUT_SIZE'],
+            'output_size':config['OUTPUT_SIZE'],
+            'min_max_action':config['MIN_MAX_ACTION'],
+            'meta_param_size':config['META_PARAM_SIZE'], 
+            'gsp':config['GSP'],
+            'recurrent_gsp':config['RECURRENT'],
+            'attention': config['ATTENTION'],
+            'gsp_input_size': config['GSP_INPUT_SIZE'],
+            'gsp_output_size': config['GSP_OUTPUT_SIZE'],
+            'gsp_min_max_action': config['GSP_MIN_MAX_ACTION'],
+            'gsp_look_back':config['GSP_LOOK_BACK'],
+            'gsp_sequence_length': config['GSP_SEQUENCE_LENGTH'],
+            'config': config
+    }
+
+    actor = Actor(**nn_args)
     scores, avg_exp_scores, eps_history = [], [], []
-    n_games = 500
+    n_games = config['N_GAMES']
 
     for i in range(n_games):
         score = 0

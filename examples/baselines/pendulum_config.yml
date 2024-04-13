@@ -1,0 +1,48 @@
+##----------------- ENV Parameters -------------------------------
+N_GAMES: 500
+
+##----------------- Actor Parameters -----------------------------
+LEARNING_SCHEME: DDPG
+INPUT_SIZE: 3
+OUTPUT_SIZE: 1
+OPTIONS_PER_ACTION: 1
+MIN_MAX_ACTION: 1.0
+META_PARAM_SIZE: 2
+
+##----------------- GSP Parameters --------------------------------
+GSP: False
+RECURRENT: False
+ATTENTION: False
+GSP_INPUT_SIZE: 1
+GSP_OUTPUT_SIZE: 1
+GSP_MIN_MAX_ACTION: 1.0
+GSP_LOOK_BACK: 2
+GSP_SEQUENCE_LENGTH: 5
+RECURRENT_HIDDEN_SIZE: 256
+RECURRENT_EMBEDDING_SIZE: 256
+RECURRENT_NUM_LAYERS: 5
+
+##----------------- Hyper Parameters -----------------------------
+# Learning Rates
+GAMMA: 0.99997
+TAU: 0.005
+ALPHA: 0.001
+BETA: 0.002
+LR: 0.0001
+
+# Epsilon Greedy
+EPSILON: 1.0
+EPS_MIN: 0.01
+EPS_DEC: 0.00005
+
+# ACTOR
+BATCH_SIZE: 64
+MEM_SIZE: 100000
+REPLACE_TARGET_COUNTER: 1000
+NOISE: 0.1
+UPDATE_ACTOR_ITER: 2
+WARMUP: 1000
+
+# GSP
+GSP_LEARNING_FREQUENCY: 1000
+GSP_BATCH_SIZE: 16
