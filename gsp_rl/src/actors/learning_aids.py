@@ -342,6 +342,7 @@ class NetworkAids(Hyperparameters):
 
         if networks['learn_step_counter'] % self.update_actor_iter != 0:
             return 0, 0
+        print('LEARNING ACTOR')
         #print('Actor Learn Step')
         networks['actor'].optimizer.zero_grad()
         actor_q1_loss = networks['critic_1'].forward(states, networks['actor'].forward(states))
