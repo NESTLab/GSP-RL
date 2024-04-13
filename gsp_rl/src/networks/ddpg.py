@@ -62,14 +62,12 @@ class DDPGActorNetwork(nn.Module):
 
     def forward(self, x: T.Tensor) -> T.Tensor:
         """ Forward Propogation Step"""
-        print('DDPG FORWARD')
         prob = self.fc1(x)
         prob = self.relu(prob)
         prob = self.fc2(prob)
         prob = self.relu(prob)
         mu = self.mu(prob)
         mu = self.min_max_action*self.tanh(mu)
-        print('MU', mu)
         return mu
 
     def save_checkpoint(self, path: str, intention=False) -> None:

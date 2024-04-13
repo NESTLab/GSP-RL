@@ -225,15 +225,21 @@ class NetworkAids(Hyperparameters):
             actions = actions.unsqueeze(1)
         elif recurrent:
             actions = actions.view(self.batch_size, 1, 1)
+        print('[STATES]', states)
         target_actions = networks['target_actor'](states_)
+        print('[TARGET ACTIONS]', target_actions)
         q_value_ = networks['target_critic'](states_, target_actions)
+        print('[Q VALUE]', q_value_)
 
         target = T.unsqueeze(rewards, 1) + self.gamma*q_value_
+        print('[TARGET]', target)
 
         #Critic Update
         networks['critic'].optimizer.zero_grad()
         q_value = networks['critic'](states, actions)
+        print('[Q VALUE]', q_value)
         value_loss = Loss(q_value, target)
+        print('[VALUE LOSS]', value_loss)
         value_loss.backward()
         networks['critic'].optimizer.step()
 
