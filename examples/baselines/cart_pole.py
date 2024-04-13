@@ -137,7 +137,7 @@ if __name__ == "__main__":
                 next_predicted_pole_angle_change = agent.choose_action(gsp_observation, agent.gsp_networks)[-1]
 
             observation_ = agent.make_agent_state(observation_, next_predicted_pole_angle_change)
-            agent.store_agent_transition(observation, [action], reward, observation_, done)
+            agent.store_agent_transition(observation, action, reward, observation_, done)
             agent.learn()
             observation = observation_
             time+=1
