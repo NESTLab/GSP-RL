@@ -322,8 +322,8 @@ class NetworkAids(Hyperparameters):
 
         print('[Q1_]', q1_)
         print('[Q2_]', q2_)
-        print('[STATES]', states)
-        print('[ACTIONS]', actions)
+        print('[STATES_]', states)
+        print('[TARGET ACTIONS]', target_actions)
 
         q1 = networks['critic_1'].forward(states, actions).squeeze() # need to squeeze to change shape from [100,1] to [100] to match target shape
         q2 = networks['critic_2'].forward(states, actions).squeeze()
