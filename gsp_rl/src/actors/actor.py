@@ -300,7 +300,6 @@ class Actor(NetworkAids):
         return self.make_RDDPG_networks(lstm_nn_args, actor_nn_args, critic_nn_args)
 
     def update_network_parameters(self, tau = None):
-        print('UPDATING NETWORK PARAMETERS', tau)
         if tau is None:
             tau = self.tau
         # Update gsp Networks 
