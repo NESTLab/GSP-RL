@@ -32,6 +32,6 @@ def test_forward():
     fc1_dims:int  = 200
     fc2_dims: int = 400
     DQN_Network = DQN(id, lr, input_size, output_size, fc1_dims, fc2_dims)
-    random_observation = T.rand((1, input_size))
+    random_observation = T.rand((1, input_size)).to(DQN_Network.device)
     assert(DQN_Network(random_observation).shape[1] == output_size)
     

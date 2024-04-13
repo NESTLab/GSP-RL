@@ -33,7 +33,7 @@ def test_actor_forward():
     fc1_dims:int  = 200
     fc2_dims: int = 400
     DDPG_Actor_Network = DDPGActorNetwork(id, lr, input_size, output_size, fc1_dims, fc2_dims)
-    random_observation = T.rand((1, input_size))
+    random_observation = T.rand((1, input_size)).to(DDPG_Actor_Network.device)
     assert(DDPG_Actor_Network(random_observation).shape[1] == output_size)
 
 def test_building_critic_network():
@@ -64,7 +64,7 @@ def test_critic_forward():
     fc1_dims:int  = 200
     fc2_dims: int = 400
     DDPG_Critic_Network = DDPGCriticNetwork(id, lr, input_size, output_size, fc1_dims, fc2_dims)
-    random_input = T.rand((1, input_size-2))
-    random_action = T.rand((1, 2))
+    random_input = T.rand((1, input_size-2)).to(DDPG_Critic_Network.device)
+    random_action = T.rand((1, 2)).to(DDPG_Critic_Network.device)
     assert(DDPG_Critic_Network(random_input, random_action).shape[1] == 1)
     

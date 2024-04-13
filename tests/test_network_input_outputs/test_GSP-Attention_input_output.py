@@ -43,6 +43,6 @@ def test_attention_forward():
         'max_length': 5,
     }
     attention_network = AttentionEncoder(**nn_args)
-    random_input = T.rand(1, nn_args['max_length'], nn_args['input_size'])
+    random_input = T.rand(1, nn_args['max_length'], nn_args['input_size']).to(attention_network.device)
     assert(attention_network(random_input).shape[1] == nn_args['output_size'])
         

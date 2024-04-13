@@ -33,7 +33,7 @@ def test_actor_forward():
     fc1_dims:int  = 200
     fc2_dims: int = 400
     TD3_Actor_Network = TD3ActorNetwork(id, alpha, input_size, output_size, fc1_dims, fc2_dims)
-    random_observation = T.rand((1, input_size))
+    random_observation = T.rand((1, input_size)).to(TD3_Actor_Network.device)
     assert(TD3_Actor_Network(random_observation).shape[1] == output_size)
 
 def test_building_critic_network():
@@ -64,7 +64,7 @@ def test_critic_forward():
     fc1_dims:int  = 200
     fc2_dims: int = 400
     TD3_Critic_Network = TD3CriticNetwork(id, beta, input_size, output_size, fc1_dims, fc2_dims)
-    random_input = T.rand((1, input_size))
-    random_action = T.rand((1, output_size))
+    random_input = T.rand((1, input_size)).to(TD3_Critic_Network.device)
+    random_action = T.rand((1, output_size)).to(TD3_Critic_Network.device)
     assert(TD3_Critic_Network(random_input, random_action).shape[1] == 1)
     
