@@ -34,8 +34,9 @@ def test_actor_forward():
     fc2_dims: int = 400
     TD3_Actor_Network = TD3ActorNetwork(id, alpha, input_size, output_size, fc1_dims, fc2_dims)
     random_observation = T.rand((1, input_size)).to(TD3_Actor_Network.device)
-    assert(TD3_Actor_Network(random_observation).shape[1] == output_size)
-
+    out = TD3_Actor_Network(random_observation)
+    assert(out.shape[1] == output_size)
+    
 def test_building_critic_network():
     id: int = 1
     beta: float = 1e-4
@@ -47,7 +48,7 @@ def test_building_critic_network():
     for name, param in DQN_Network.named_parameters():
         shape = param.shape
         if name == 'fc1.weight':
-            assert(shape[1] == input_size+output_size)
+            assert(shape[1] == input_size)
             assert(shape[0] == fc1_dims)
         elif name == 'fc2.weight':
             assert(shape[1] == fc1_dims)
@@ -64,7 +65,8 @@ def test_critic_forward():
     fc1_dims:int  = 200
     fc2_dims: int = 400
     TD3_Critic_Network = TD3CriticNetwork(id, beta, input_size, output_size, fc1_dims, fc2_dims)
-    random_input = T.rand((1, input_size)).to(TD3_Critic_Network.device)
     random_action = T.rand((1, output_size)).to(TD3_Critic_Network.device)
+    random_input = T.rand((1, input_size-random_action.shape[1])).to(TD3_Critic_Network.device)
+    
     assert(TD3_Critic_Network(random_input, random_action).shape[1] == 1)
     

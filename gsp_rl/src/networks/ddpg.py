@@ -61,7 +61,7 @@ class DDPGActorNetwork(nn.Module):
         self.mu.weight.data.uniform_(-init_w, init_w)
 
     def forward(self, x: T.Tensor) -> T.Tensor:
-        """ Forward Propogation Steo"""
+        """ Forward Propogation Step"""
         prob = self.fc1(x)
         prob = self.relu(prob)
         prob = self.fc2(prob)
@@ -136,6 +136,7 @@ class DDPGCriticNetwork(nn.Module):
     def forward(self, state: T.Tensor, action: T.Tensor) -> T.Tensor:
         """
         Forward Propogation Step"""
+        
         action_value = self.fc1(T.cat([state, action], dim = -1))
         action_value = self.relu(action_value)
         action_value = self.fc2(action_value)

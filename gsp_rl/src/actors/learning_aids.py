@@ -231,14 +231,14 @@ class NetworkAids(Hyperparameters):
         target = T.unsqueeze(rewards, 1) + self.gamma*q_value_
 
         #Critic Update
-        networks['critic'].zero_grad()
+        networks['critic'].optimizer.zero_grad()
         q_value = networks['critic'](states, actions)
         value_loss = Loss(q_value, target)
         value_loss.backward()
         networks['critic'].optimizer.step()
 
         #Actor Update
-        networks['actor'].zero_grad()
+        networks['actor'].optimizer.zero_grad()
 
         new_policy_actions = networks['actor'](states)
         actor_loss = -networks['critic'](states, new_policy_actions)
@@ -277,7 +277,7 @@ class NetworkAids(Hyperparameters):
             # print(target.shape)
 
             #Critic Update
-            networks['critic'].zero_grad()
+            networks['critic'].optimizer.zero_grad()
             q_value = networks['critic'](states, actions)
             # print('[Q_VALUE]', q_value.shape)
             # print('[TARGET]', target.shape)
@@ -286,7 +286,7 @@ class NetworkAids(Hyperparameters):
             networks['critic'].optimizer.step()
 
             #Actor Update
-            networks['actor'].zero_grad()
+            networks['actor'].optimizer.zero_grad()
 
             new_policy_actions = networks['actor'](states)
             actor_loss = -networks['critic'](states, new_policy_actions)
@@ -301,7 +301,6 @@ class NetworkAids(Hyperparameters):
 
     def learn_TD3(self, networks, gsp = False):
         states, actions, rewards, states_, dones = self.sample_memory(networks)
-
         if not gsp:
             actions = actions[:,:2]
         else:
@@ -333,6 +332,7 @@ class NetworkAids(Hyperparameters):
         q1_loss = F.mse_loss(target, q1)
         q2_loss = F.mse_loss(target, q2)
         critic_loss = q1_loss + q2_loss
+
         critic_loss.backward()
         networks['critic_1'].optimizer.step()
         networks['critic_2'].optimizer.step()

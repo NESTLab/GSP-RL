@@ -50,7 +50,7 @@ if __name__ == "__main__":
             observation_, reward, done, truncated, info = env.step(action)
             score += reward
             done = done or truncated
-            actor.store_agent_transition(observation, [action], reward, observation_, done)
+            actor.store_agent_transition(observation, action, reward, observation_, done)
             actor.learn()
             observation = observation_
         
