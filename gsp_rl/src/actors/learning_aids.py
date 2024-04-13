@@ -300,6 +300,7 @@ class NetworkAids(Hyperparameters):
         return batch_loss
 
     def learn_TD3(self, networks, gsp = False):
+        print('LEARNING TD3')
         states, actions, rewards, states_, dones = self.sample_memory(networks)
 
         if not gsp:
