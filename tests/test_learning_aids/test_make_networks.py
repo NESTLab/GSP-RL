@@ -205,7 +205,7 @@ def test_make_TD3_networks():
         critic_nn_args = {
             'id':1,
             'beta':1e-4,
-            'input_size':actor_nn_args['input_size'],
+            'input_size':actor_nn_args['input_size']+actor_nn_args['output_size'],
             'output_size':actor_nn_args['output_size'],
             'fc1_dims': 400,
             'fc2_dims':300
@@ -224,20 +224,20 @@ def test_make_TD3_networks():
         for name, param in networks['critic_1'].named_parameters():
             shape = param.shape
             if name == 'fc1.weight':
-                assert(shape == (actor_nn_args['fc1_dims'], actor_nn_args['input_size']+critic_nn_args['output_size']))
+                assert(shape == (critic_nn_args['fc1_dims'], actor_nn_args['input_size']+actor_nn_args['output_size']))
             elif name == 'fc2.weight':
-                assert(shape == (actor_nn_args['fc2_dims'], actor_nn_args['fc1_dims']))
+                assert(shape == (critic_nn_args['fc2_dims'], critic_nn_args['fc1_dims']))
             elif name == 'fc3.weight':
-                assert(shape == (1, actor_nn_args['fc2_dims']))
+                assert(shape == (1, critic_nn_args['fc2_dims']))
 
         for name, param in networks['critic_2'].named_parameters():
             shape = param.shape
             if name == 'fc1.weight':
-                assert(shape == (actor_nn_args['fc1_dims'], actor_nn_args['input_size']+critic_nn_args['output_size']))
+                assert(shape == (critic_nn_args['fc1_dims'], actor_nn_args['input_size']+actor_nn_args['output_size']))
             elif name == 'fc2.weight':
-                assert(shape == (actor_nn_args['fc2_dims'], actor_nn_args['fc1_dims']))
+                assert(shape == (critic_nn_args['fc2_dims'], critic_nn_args['fc1_dims']))
             elif name == 'fc3.weight':
-                assert(shape == (1, actor_nn_args['fc2_dims']))
+                assert(shape == (1, critic_nn_args['fc2_dims']))
 
 def test_make_Environmental_Encoder():
     lstm_nn_args = {
