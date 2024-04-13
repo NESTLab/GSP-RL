@@ -149,7 +149,6 @@ class NetworkAids(Hyperparameters):
                                            size = (n_actions,))
                           ).to(networks['actor'].device)
         else:
-            print('[LEARNING] DONE WITH WARMUP', self.time_step)
             state = T.tensor(observation, dtype = T.float).to(networks['actor'].device)
             mu = networks['actor'].forward(state).to(networks['actor'].device)
         mu_prime = mu + T.tensor(np.random.normal(scale = self.noise), dtype = T.float).to(networks['actor'].device)
@@ -232,14 +231,14 @@ class NetworkAids(Hyperparameters):
         target = T.unsqueeze(rewards, 1) + self.gamma*q_value_
 
         #Critic Update
-        networks['critic'].zero_grad()
+        networks['critic'].optimizer.zero_grad()
         q_value = networks['critic'](states, actions)
         value_loss = Loss(q_value, target)
         value_loss.backward()
         networks['critic'].optimizer.step()
 
         #Actor Update
-        networks['actor'].zero_grad()
+        networks['actor'].optimizer.zero_grad()
 
         new_policy_actions = networks['actor'](states)
         actor_loss = -networks['critic'](states, new_policy_actions)
@@ -278,7 +277,7 @@ class NetworkAids(Hyperparameters):
             # print(target.shape)
 
             #Critic Update
-            networks['critic'].zero_grad()
+            networks['critic'].optimizer.zero_grad()
             q_value = networks['critic'](states, actions)
             # print('[Q_VALUE]', q_value.shape)
             # print('[TARGET]', target.shape)
@@ -287,7 +286,7 @@ class NetworkAids(Hyperparameters):
             networks['critic'].optimizer.step()
 
             #Actor Update
-            networks['actor'].zero_grad()
+            networks['actor'].optimizer.zero_grad()
 
             new_policy_actions = networks['actor'](states)
             actor_loss = -networks['critic'](states, new_policy_actions)

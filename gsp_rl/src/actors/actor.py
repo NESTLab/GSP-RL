@@ -334,9 +334,7 @@ class Actor(NetworkAids):
             actions = T.clamp(actions, -self.min_max_action, self.min_max_action)
             return actions[0].cpu().detach().numpy()
         elif networks['learning_scheme'] == 'TD3':
-            print('[ACTOR] Observations', observation)
             actions = self.TD3_choose_action(observation, networks, self.output_size)
-            print('[ACTOR] Actions', actions)
             return actions[0]
         elif networks['learning_scheme'] == 'attention':
             self.attention_observation.append(observation)

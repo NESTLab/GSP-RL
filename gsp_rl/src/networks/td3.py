@@ -44,13 +44,9 @@ class TD3ActorNetwork(nn.Module):
         """
         Forward Propogation Step
         """
-        print('[TD3] State', state)
         prob = F.relu(self.fc1(state))
-        print('[TD3] Prob', prob)
         prob = F.relu(self.fc2(prob))
-        print('[TD3] Prob 2', prob)
         mu = self.mu(prob)
-        print('[TD3] MU', mu)
         mu = self.min_max_action * T.tanh(mu)
 
         return mu
