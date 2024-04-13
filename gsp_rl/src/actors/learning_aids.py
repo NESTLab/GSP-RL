@@ -307,6 +307,12 @@ class NetworkAids(Hyperparameters):
 
     def learn_TD3(self, networks, gsp = False):
         states, actions, rewards, states_, dones = self.sample_memory(networks)
+        print('[TYPES]')
+        print('states:', type(states))
+        print('actions:', type(actions))
+        print('rewards:', type(rewards))
+        print('new states:', type(states_))
+    
 
         if not gsp:
             actions = actions[:,:2]
@@ -319,14 +325,15 @@ class NetworkAids(Hyperparameters):
         print('[TARGET ACTIONS 2]', target_actions)
         target_actions = T.clamp(target_actions, -self.min_max_action, self.min_max_action)
         print('[TARGET ACTIONS 3]', target_actions)
-        
+
         q1_ = networks['target_critic_1'].forward(states_, target_actions)
         q2_ = networks['target_critic_2'].forward(states_, target_actions)
 
         print('[Q1_]', q1_)
         print('[Q2_]', q2_)
-        print('[STATES_]', states)
-        
+
+        print('[STATES]', states)
+        print('[ACTIONS]', actions)
 
         q1 = networks['critic_1'].forward(states, actions).squeeze() # need to squeeze to change shape from [100,1] to [100] to match target shape
         q2 = networks['critic_2'].forward(states, actions).squeeze()
