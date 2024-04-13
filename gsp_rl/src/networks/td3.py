@@ -91,7 +91,7 @@ class TD3CriticNetwork(nn.Module):
         self.output_dims = output_size
         self.name = name +'_'+str(id)+'_TD3'
 
-        self.fc1 = nn.Linear(self.input_dims + self.output_dims, self.fc1_dims)
+        self.fc1 = nn.Linear(self.input_dims, self.fc1_dims)
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
         self.q1 = nn.Linear(self.fc2_dims, 1)
 
