@@ -19,6 +19,7 @@ pylint = "^3.0.3"
 zmq = "^0.0.0"
 gymnasium = {extras = ["box2d"], version = "^0.29.1"}
 tensorboard = "^2.16.2"
+pyyaml = "^6.0.1"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -1,4 +1,6 @@
 import numpy as np
+import os
+import yaml
 from gsp_rl.src.networks import (
     DQN, 
     DDQN,
@@ -14,7 +16,13 @@ from gsp_rl.src.networks import (
 
 from gsp_rl.src.actors import NetworkAids
 
-NA = NetworkAids()
+containing_folder = os.path.dirname(os.path.realpath(__file__))
+config_path = os.path.join(containing_folder, 'config.yml')
+
+with open(config_path, 'r') as file:
+    config = yaml.safe_load(file)
+
+NA = NetworkAids(config)
 
 def test_make_DQN_networks():
     """

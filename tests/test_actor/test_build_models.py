@@ -1,4 +1,12 @@
 from gsp_rl.src.actors import Actor
+import os
+import yaml
+
+containing_folder = os.path.dirname(os.path.realpath(__file__))
+config_path = os.path.join(containing_folder, 'config.yml')
+
+with open(config_path, 'r') as file:
+    config = yaml.safe_load(file)
 
 def test_build_networks_DQN():
     nn_args = {
@@ -7,13 +15,15 @@ def test_build_networks_DQN():
             'input_size':32,
             'output_size':2,
             'meta_param_size':2, 
-            'intention':False,
-            'recurrent_intention':False,
+            'gsp':False,
+            'recurrent_gsp':False,
             'attention': False,
-            'intention_input_size': 6,
-            'intention_output_size': 1,
-            'intention_look_back':2,
-            'intention_sequence_length': 5
+            'gsp_input_size': 6,
+            'gsp_output_size': 1,
+            'gsp_look_back':2,
+            'gsp_sequence_length': 5,
+            'config': config,
+            'min_max_action':1.0,
     }
     actor = Actor(**nn_args)
     networks = actor.networks
@@ -42,13 +52,15 @@ def test_build_networks_DDQN():
             'input_size':32,
             'output_size':2,
             'meta_param_size':2, 
-            'intention':False,
-            'recurrent_intention':False,
+            'gsp':False,
+            'recurrent_gsp':False,
             'attention': False,
-            'intention_input_size': 6,
-            'intention_output_size': 1,
-            'intention_look_back':2,
-            'intention_sequence_length': 5
+            'gsp_input_size': 6,
+            'gsp_output_size': 1,
+            'gsp_look_back':2,
+            'gsp_sequence_length': 5,
+            'config': config,
+            'min_max_action':1.0,
     }
     actor = Actor(**nn_args)
     networks = actor.networks
@@ -77,13 +89,15 @@ def test_build_networks_DDPG():
             'input_size':32,
             'output_size':2,
             'meta_param_size':2, 
-            'intention':False,
-            'recurrent_intention':False,
+            'gsp':False,
+            'recurrent_gsp':False,
             'attention': False,
-            'intention_input_size': 6,
-            'intention_output_size': 1,
-            'intention_look_back':2,
-            'intention_sequence_length': 5
+            'gsp_input_size': 6,
+            'gsp_output_size': 1,
+            'gsp_look_back':2,
+            'gsp_sequence_length': 5,
+            'config': config,
+            'min_max_action':1.0,
     }
     actor = Actor(**nn_args)
     networks = actor.networks
@@ -131,13 +145,15 @@ def test_build_networks_TD3():
             'input_size':32,
             'output_size':2,
             'meta_param_size':2, 
-            'intention':False,
-            'recurrent_intention':False,
+            'gsp':False,
+            'recurrent_gsp':False,
             'attention': False,
-            'intention_input_size': 6,
-            'intention_output_size': 1,
-            'intention_look_back':2,
-            'intention_sequence_length': 5
+            'gsp_input_size': 6,
+            'gsp_output_size': 1,
+            'gsp_look_back':2,
+            'gsp_sequence_length': 5,
+            'config': config,
+            'min_max_action':1.0,
     }
     actor = Actor(**nn_args)
     networks = actor.networks
@@ -195,23 +211,25 @@ def test_build_networks_TD3():
         if name == 'fc3.weights':
             assert(shape == (1, nn_args['fc2_dims']))
 
-def test_build_intention_networks_DDPG():
+def test_build_gsp_networks_DDPG():
     nn_args = {
             'id':1,
             'network': 'DQN',
             'input_size':32,
             'output_size':2,
             'meta_param_size':2, 
-            'intention':True,
-            'recurrent_intention':False,
+            'gsp':True,
+            'recurrent_gsp':False,
             'attention': False,
-            'intention_input_size': 6,
-            'intention_output_size': 1,
-            'intention_look_back':2,
-            'intention_sequence_length': 5
+            'gsp_input_size': 6,
+            'gsp_output_size': 1,
+            'gsp_look_back':2,
+            'gsp_sequence_length': 5,
+            'config': config,
+            'min_max_action':1.0,
     }
     actor = Actor(**nn_args)
-    networks = actor.intention_networks
+    networks = actor.gsp_networks
     for name, param in networks['actor'].named_parameters():
         shape = tuple(param.size())
         if name == 'mu.weights':
@@ -222,23 +240,25 @@ def test_build_intention_networks_DDPG():
         if name == 'q.weights':
             assert(shape == 1)
 
-def test_build_intention_networks_Attention():
+def test_build_gsp_networks_Attention():
     nn_args = {
             'id':1,
             'network': 'DQN',
             'input_size':32,
             'output_size':2,
             'meta_param_size':2, 
-            'intention':True,
-            'recurrent_intention':False,
+            'gsp':True,
+            'recurrent_gsp':False,
             'attention': True,
-            'intention_input_size': 6,
-            'intention_output_size': 1,
-            'intention_look_back':2,
-            'intention_sequence_length': 5
+            'gsp_input_size': 6,
+            'gsp_output_size': 1,
+            'gsp_look_back':2,
+            'gsp_sequence_length': 5,
+            'config': config,
+            'min_max_action':1.0,
     }
     actor = Actor(**nn_args)
-    networks = actor.intention_networks
+    networks = actor.gsp_networks
     for name, param in networks['attention'].named_parameters():
         shape = tuple(param.size())
         if name == 'fc_out.weights':

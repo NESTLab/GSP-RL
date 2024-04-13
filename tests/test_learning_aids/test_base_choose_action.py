@@ -1,5 +1,8 @@
 import numpy as np
 import torch as T
+import os
+import yaml
+
 from gsp_rl.src.networks import (
     DQN, 
     DDQN,
@@ -12,7 +15,13 @@ from gsp_rl.src.networks import (
 
 from gsp_rl.src.actors import NetworkAids
 
-NA = NetworkAids()
+containing_folder = os.path.dirname(os.path.realpath(__file__))
+config_path = os.path.join(containing_folder, 'config.yml')
+
+with open(config_path, 'r') as file:
+    config = yaml.safe_load(file)
+
+NA = NetworkAids(config)
 
 def test_DQN_DDQN_choose_action():
     """
@@ -111,7 +120,7 @@ def test_make_TD3_networks():
             'input_size':np.random.randint(4, 40),
             'output_size':np.random.randint(1, 15),
             'fc1_dims': 400,
-            'fc2_dims':300
+            'fc2_dims':300,
         }
 
         critic_nn_args = {

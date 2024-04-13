@@ -21,43 +21,32 @@ Loss = nn.MSELoss()
 
 
 class Hyperparameters:
-    def __init__(self):
-        self.gamma = 0.99997
-        self.tau = 0.005
-        self.alpha = 0.001
-        self.beta = 0.002
-        self.lr = 0.0001
-        self.ee_lr = 0.01
-        self.epsilon = 1.0
-        self.eps_min = 0.01
-        self.eps_dec = 5e-5
+    def __init__(self, config):
+        self.gamma = config['GAMMA']
+        self.tau = config['TAU']
+        self.alpha = config['ALPHA']
+        self.beta = config['BETA']
+        self.lr = config['LR']
 
-        self.intn_epsilon = 1.0
-        self.intn_eps_min = 0.01
-        self.intn_eps_dec = 1e-5
-        self.intn_learning_offset = 1000 #learn after every 1000 action network learning steps
-        self.intn_batch_size = 16
+        self.epsilon = config['EPSILON']
+        self.eps_min = config['EPS_MIN']
+        self.eps_dec = config['EPS_DEC']
 
-        self.batch_size = 64
-        self.mem_size = 100000
-        self.replace_target_ctr = 1000
-        self.failed = False
-        self.failure_action = [0, 0, 1]
+        self.gsp_learning_offset = config['GSP_LEARNING_FREQUENCY'] #learn after every 1000 action network learning steps
+        self.gsp_batch_size = config['GSP_BATCH_SIZE']
 
-        self.noise = 0.1
-        self.update_actor_iter = 2
-        self.warmup = 1000
+        self.batch_size = config['BATCH_SIZE']
+        self.mem_size = config['MEM_SIZE']
+        self.replace_target_ctr = config['REPLACE_TARGET_COUNTER']
+
+        self.noise = config['NOISE']
+        self.update_actor_iter = config['UPDATE_ACTOR_ITER']
+        self.warmup = config['WARMUP']
         self.time_step = 0
 
-        self.min_max_action = 1
-
-        #GNN
-        self.hidden_channels = 32
-        self.num_heads = 4
-
 class NetworkAids(Hyperparameters):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, config):
+        super().__init__(config)
     def make_DQN_networks(self, nn_args):
         return {'q_eval':DQN(**nn_args), 'q_next':DQN(**nn_args)}
     
@@ -163,7 +152,7 @@ class NetworkAids(Hyperparameters):
             state = T.tensor(observation, dtype = T.float).to(networks['actor'].device)
             mu = networks['actor'].forward(state).to(networks['actor'].device)
         mu_prime = mu + T.tensor(np.random.normal(scale = self.noise), dtype = T.float).to(networks['actor'].device)
-        mu_prime = T.clamp(mu_prime, -self.min_max_action, self.min_max_action)
+        mu_prime = T.clamp(mu_prime, -networks['actor'].min_max_action, networks['actor'].min_max_action)
         self.time_step += 1
         return mu_prime.unsqueeze(0).cpu().detach().numpy()
     
@@ -228,9 +217,9 @@ class NetworkAids(Hyperparameters):
 
         return loss.item()
 
-    def learn_DDPG(self, networks, intention = False, recurrent = False):
+    def learn_DDPG(self, networks, gsp = False, recurrent = False):
         states, actions, rewards, states_, dones = self.sample_memory(networks)
-        if not intention:
+        if not gsp:
             actions = actions[:,:2]
         elif not recurrent:
             actions = actions.unsqueeze(1)
@@ -261,11 +250,11 @@ class NetworkAids(Hyperparameters):
 
         return actor_loss.item()
     
-    def learn_RDDPG(self, networks, intention = False, recurrent = False):
+    def learn_RDDPG(self, networks, gsp = False, recurrent = False):
         s, a, r, s_, d = self.sample_memory(networks)
         batch_loss = 0
-        if self.intention:
-            batch_size = self.intn_batch_size
+        if self.gsp:
+            batch_size = self.gsp_batch_size
         else:
             batch_size = self.batch_size
         for batch in range(batch_size):
@@ -274,7 +263,7 @@ class NetworkAids(Hyperparameters):
             rewards = r[batch]
             states_ = s_[batch]
             dones = d[batch]
-            if not intention:
+            if not gsp:
                 actions = actions[:,:2]
             elif not recurrent:
                 actions = actions.unsqueeze(1)
@@ -310,10 +299,10 @@ class NetworkAids(Hyperparameters):
 
         return batch_loss
 
-    def learn_TD3(self, networks, intention = False):
+    def learn_TD3(self, networks, gsp = False):
         states, actions, rewards, states_, dones = self.sample_memory(networks)
 
-        if not intention:
+        if not gsp:
             actions = actions[:,:2]
         else:
             actions.unsqueeze(1)
@@ -362,7 +351,7 @@ class NetworkAids(Hyperparameters):
         return actor_loss.item()
 
     def learn_attention(self, networks):
-        if networks['replay'].mem_ctr < self.intn_batch_size:
+        if networks['replay'].mem_ctr < self.gsp_batch_size:
             return 0
         observations, labels = self.sample_attention_memory(networks)
         networks['learn_step_counter'] += 1

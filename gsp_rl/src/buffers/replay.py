@@ -10,16 +10,16 @@ class ReplayBuffer():
             num_observations: int,
             num_actions: int,
             action_type: str = None,
-            use_intention: bool = False
+            use_gsp: bool = False
     ) -> None:
         """ Constructor """
         self.mem_size = max_size
-        self.use_intention = use_intention
+        self.use_gsp = use_gsp
         self.mem_ctr = 0
         self.action_type = action_type
         self.state_memory = np.zeros((self.mem_size, num_observations), dtype = np.float32)
         self.new_state_memory = np.zeros((self.mem_size, num_observations), dtype = np.float32)
-        if not use_intention:
+        if not use_gsp:
             if self.action_type == 'Discrete':
                 self.action_memory = np.zeros((self.mem_size), dtype = int)
             elif self.action_type == 'Continuous':
@@ -45,7 +45,7 @@ class ReplayBuffer():
         """
         mem_index = self.mem_ctr % self.mem_size
         self.state_memory[mem_index] = state
-        if not self.use_intention:
+        if not self.use_gsp:
             # TODO Why are these different?
             if self.action_type == 'Discrete':
                 self.action_memory[mem_index] = action[0]
