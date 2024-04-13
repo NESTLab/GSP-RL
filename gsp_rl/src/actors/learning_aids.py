@@ -152,11 +152,9 @@ class NetworkAids(Hyperparameters):
             print('[LEARNING] DONE WITH WARMUP', self.time_step)
             state = T.tensor(observation, dtype = T.float).to(networks['actor'].device)
             mu = networks['actor'].forward(state).to(networks['actor'].device)
-        print('[LEARNING] MU', mu)
         mu_prime = mu + T.tensor(np.random.normal(scale = self.noise), dtype = T.float).to(networks['actor'].device)
         mu_prime = T.clamp(mu_prime, -networks['actor'].min_max_action, networks['actor'].min_max_action)
         self.time_step += 1
-        print('[LEARNING] MU', mu_prime)
         return mu_prime.unsqueeze(0).cpu().detach().numpy()
     
     def Attention_choose_action(self, observation, networks):
