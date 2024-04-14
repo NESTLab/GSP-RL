@@ -155,5 +155,5 @@ def test_Attention_choose_action():
         }
         networks = NA.make_Attention_Encoder(nn_args)
         random_input = np.random.uniform(0, 1, (1, nn_args['max_length'],nn_args['input_size']))
-        
+        random_input = T.Tensor(random_input).to(networks['attention'].device)
         assert(tuple(NA.Attention_choose_action(random_input, networks).shape) == (1, nn_args['output_size']))
