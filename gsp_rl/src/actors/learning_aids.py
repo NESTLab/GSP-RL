@@ -219,9 +219,6 @@ class NetworkAids(Hyperparameters):
     def learn_DDPG(self, networks, gsp = False, recurrent = False):
         states, actions, rewards, states_, dones = self.sample_memory(networks)
 
-        if gsp:
-            actions = actions.unsqueeze(-1)
-
         target_actions = networks['target_actor'](states_)
         q_value_ = networks['target_critic'](states_, target_actions)
 
@@ -229,8 +226,7 @@ class NetworkAids(Hyperparameters):
 
         #Critic Update
         networks['critic'].optimizer.zero_grad()
-        print('[DDPG] States Shape', states.shape)
-        print('[DDPG] Actions Shape', actions.shape)
+
         q_value = networks['critic'](states, actions)
         value_loss = Loss(q_value, target)
         value_loss.backward()
