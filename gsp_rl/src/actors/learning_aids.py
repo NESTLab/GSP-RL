@@ -226,6 +226,8 @@ class NetworkAids(Hyperparameters):
 
         #Critic Update
         networks['critic'].optimizer.zero_grad()
+        print('[DDPG] States Shape', states.shape)
+        print('[DDPG] Actions Shape', actions.shape)
         q_value = networks['critic'](states, actions)
         value_loss = Loss(q_value, target)
         value_loss.backward()
