@@ -220,7 +220,7 @@ class NetworkAids(Hyperparameters):
         states, actions, rewards, states_, dones = self.sample_memory(networks)
 
         if gsp:
-            actions = actions.unsqueeze(0)
+            actions = actions.unsqueeze(-1)
 
         target_actions = networks['target_actor'](states_)
         q_value_ = networks['target_critic'](states_, target_actions)
