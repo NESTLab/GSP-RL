@@ -218,7 +218,7 @@ class NetworkAids(Hyperparameters):
 
     def learn_DDPG(self, networks, gsp = False, recurrent = False):
         states, actions, rewards, states_, dones = self.sample_memory(networks)
-
+        print('[ACTION SHAPE]', actions.shape)
         target_actions = networks['target_actor'](states_)
         q_value_ = networks['target_critic'](states_, target_actions)
 
