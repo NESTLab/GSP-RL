@@ -342,13 +342,13 @@ class NetworkAids(Hyperparameters):
         if networks['replay'].mem_ctr < self.gsp_batch_size:
             return 0
         observations, labels = self.sample_attention_memory(networks)
-        print('[LEARNING ATTENTION]')
         networks['learn_step_counter'] += 1
         networks['attention'].zero_grad()
         pred_headings = networks['attention'](observations)
         loss = Loss(pred_headings, labels.unsqueeze(-1))
         loss.backward()
         networks['attention'].optimizer.step()
+        print('[LEARNING ATTENTION]', loss.item())
         return loss.item()
         
     def decrement_epsilon(self):
