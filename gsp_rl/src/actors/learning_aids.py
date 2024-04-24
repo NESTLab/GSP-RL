@@ -342,6 +342,7 @@ class NetworkAids(Hyperparameters):
         if networks['replay'].mem_ctr < self.gsp_batch_size:
             return 0
         observations, labels = self.sample_attention_memory(networks)
+        print('[LEARNING ATTENTION]')
         networks['learn_step_counter'] += 1
         networks['attention'].zero_grad()
         pred_headings = networks['attention'](observations)
