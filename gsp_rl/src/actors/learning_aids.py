@@ -348,7 +348,6 @@ class NetworkAids(Hyperparameters):
         loss = Loss(pred_headings, labels.unsqueeze(-1))
         loss.backward()
         networks['attention'].optimizer.step()
-        print('[LEARNING ATTENTION]', loss.item())
         return loss.item()
         
     def decrement_epsilon(self):
