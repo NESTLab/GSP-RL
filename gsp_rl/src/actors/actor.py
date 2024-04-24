@@ -227,7 +227,7 @@ class Actor(NetworkAids):
                 if self.recurrent_gsp:
                     self.gsp_networks = self.build_RDDPG_gsp()
                     self.gsp_networks['learning_scheme'] = 'RDDPG'
-                    self.gsp_networks['output_size'] = 1
+                    self.gsp_networks['output_size'] = self.gsp_network_output
                     #self.gsp_networks['replay'] = ReplayBuffer(self.mem_size, self.gsp_network_input, 1, 'Continuous', use_gsp = True)
                     self.gsp_networks['replay'] = SequenceReplayBuffer(self.mem_size, self.gsp_network_input, self.gsp_network_output, self.gsp_sequence_length)
                     #SequenceReplayBuffer(max_sequence=100, num_observations = self.gsp_network_input, num_actions = 1, seq_len = 5)
@@ -235,21 +235,21 @@ class Actor(NetworkAids):
                 else:
                     self.gsp_networks = self.build_DDPG_gsp()
                     self.gsp_networks['learning_scheme'] = 'DDPG'
-                    self.gsp_networks['output_size'] = 1
-                    self.gsp_networks['replay'] = ReplayBuffer(self.mem_size, self.gsp_network_input, 1, 'Continuous', use_gsp = True)
+                    self.gsp_networks['output_size'] = self.gsp_network_output
+                    self.gsp_networks['replay'] = ReplayBuffer(self.mem_size, self.gsp_network_input, self.gsp_network_output, 'Continuous')
                     self.gsp_networks['learn_step_counter'] = 0
             elif learning_scheme == 'TD3':
                 if self.recurrent_gsp:
                     self.gsp_networks = self.build_RTD3_gsp()
                     self.gsp_networks['learning_scheme'] = 'RTD3'
-                    self.gsp_networks['output_size']  = 1
-                    self.gsp_networks['replay'] = SequenceReplayBuffer(max_sequence=100, num_observations = self.gsp_network_input, num_actions = 1, seq_len = 5)
+                    self.gsp_networks['output_size']  = self.gsp_network_output
+                    self.gsp_networks['replay'] = SequenceReplayBuffer(max_sequence=100, num_observations = self.gsp_network_input, num_actions = self.gsp_network_output, seq_len = 5)
                     self.gsp_networks['learn_step_counter'] = 0
                 else:
                     self.gsp_networks = self.build_TD3_gsp()
                     self.gsp_networks['learning_scheme'] = 'TD3'
                     self.gsp_networks['output_size'] = 1
-                    self.gsp_networks['replay'] = ReplayBuffer(self.mem_size, self.gsp_network_input, 1, 'Continuous', use_gsp = True)
+                    self.gsp_networks['replay'] = ReplayBuffer(self.mem_size, self.gsp_network_input, self.gsp_network_output, 'Continuous')
                     self.gsp_networks['learn_step_counter'] = 0
             else:
                 raise Exception('[Error] gsp learning scheme is not recognised: '+learning_scheme)
