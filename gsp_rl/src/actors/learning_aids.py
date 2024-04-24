@@ -343,7 +343,7 @@ class NetworkAids(Hyperparameters):
             return 0
         observations, labels = self.sample_attention_memory(networks)
         networks['learn_step_counter'] += 1
-        networks['attention'].zero_grad()
+        networks['attention'].optimizer.zero_grad()
         pred_headings = networks['attention'](observations)
         loss = Loss(pred_headings, labels.unsqueeze(-1))
         loss.backward()
