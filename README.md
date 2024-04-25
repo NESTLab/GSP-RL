@@ -5,6 +5,15 @@ Library for Multi-Agent Learning
 
 Before getting started, you will need [pyenv](https://github.com/pyenv/pyenv) and [poetry](https://python-poetry.org/docs/) installed on your machine
 
+After you install pyenv, you will need to add the following to `.bashrc` and restart your terminal
+```
+# pyenv
+export PATH="$HOME/.pyenv/bin:$PATH"
+eval "$(pyenv init --path)"
+eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"
+```
+
 1. Use pyenv to install and use python `3.10.2`.
 ```
 pyenv install 3.10.2
