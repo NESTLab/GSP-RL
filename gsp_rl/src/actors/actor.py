@@ -430,8 +430,6 @@ class Actor(NetworkAids):
                 self.gsp_networks['target_critic_1'].save_checkpoint(path, self.gsp)
                 self.gsp_networks['critic_2'].save_checkpoint(path, self.gsp)
                 self.gsp_networks['target_critic_2'].save_checkpoint(path, self.gsp)
-            if self.recurrent_gsp:
-                self.gsp_networks['ee'].save_checkpoint(path)
 
     def load_model(self, path):
         if self.networks['learning_scheme'] == 'DQN' or self.networks['learning_scheme'] == 'DDQN':
@@ -467,8 +465,6 @@ class Actor(NetworkAids):
                 self.gsp_networks['target_critic_1'].load_checkpoint(path, self.gsp)
                 self.gsp_networks['critic_2'].load_checkpoint(path, self.gsp)
                 self.gsp_networks['target_critic_2'].load_checkpoint(path, self.gsp)
-            if self.recurrent_gsp:
-                self.gsp_networks['ee'].load_checkpoint(path)
         
     
 if __name__=='__main__':
