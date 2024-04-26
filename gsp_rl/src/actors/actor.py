@@ -293,10 +293,10 @@ class Actor(NetworkAids):
             'output_size': 1,
             'lr': self.lr
         }
-        print('[INPUT]: ', lstm_nn_args['input_size'])
-        print('[LSTM OUTPUT]', lstm_nn_args['output_size'])
-        print('[DDPG INPUT]', actor_nn_args['input_size'])
-        print('[DDPG OUTPUT]', actor_nn_args['output_size'])
+        # print('[INPUT]: ', lstm_nn_args['input_size'])
+        # print('[LSTM OUTPUT]', lstm_nn_args['output_size'])
+        # print('[DDPG INPUT]', actor_nn_args['input_size'])
+        # print('[DDPG OUTPUT]', actor_nn_args['output_size'])
         return self.make_RDDPG_networks(lstm_nn_args, actor_nn_args, critic_nn_args)
 
     def update_network_parameters(self, tau = None):
