@@ -10,24 +10,19 @@ class ReplayBuffer():
             num_observations: int,
             num_actions: int,
             action_type: str = None,
-            use_gsp: bool = False
     ) -> None:
         """ Constructor """
         self.mem_size = max_size
-        self.use_gsp = use_gsp
         self.mem_ctr = 0
         self.action_type = action_type
         self.state_memory = np.zeros((self.mem_size, num_observations), dtype = np.float32)
         self.new_state_memory = np.zeros((self.mem_size, num_observations), dtype = np.float32)
-        if not use_gsp:
-            if self.action_type == 'Discrete':
-                self.action_memory = np.zeros((self.mem_size), dtype = int)
-            elif self.action_type == 'Continuous':
-                self.action_memory = np.zeros((self.mem_size, num_actions), dtype = np.float32)
-            else:
-                raise Exception('Unknown Action Type:' + action_type)
+        if self.action_type == 'Discrete':
+            self.action_memory = np.zeros((self.mem_size), dtype = int)
+        elif self.action_type == 'Continuous':
+            self.action_memory = np.zeros((self.mem_size, num_actions), dtype = np.float32)
         else:
-            self.action_memory = np.zeros((self.mem_size), dtype=np.float32)
+            raise Exception('Unknown Action Type:' + action_type)
         self.reward_memory = np.zeros((self.mem_size), dtype = np.float32)
         self.terminal_memory = np.zeros((self.mem_size), dtype = np.bool_)
 

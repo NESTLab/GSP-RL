@@ -105,7 +105,7 @@ class TD3CriticNetwork(nn.Module):
         """
         Forward Propogation Step
         """
-        q1_action_value = F.relu(self.fc1(T.cat([state, action[:,:2]], dim = 1))) #Remove [:,:2] from actions if grippers action needed as input
+        q1_action_value = F.relu(self.fc1(T.cat([state, action], dim = 1)))
         q1_action_value = F.relu(self.fc2(q1_action_value))
         q1 = self.q1(q1_action_value)
 

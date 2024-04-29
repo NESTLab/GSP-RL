@@ -218,12 +218,6 @@ class NetworkAids(Hyperparameters):
 
     def learn_DDPG(self, networks, gsp = False, recurrent = False):
         states, actions, rewards, states_, dones = self.sample_memory(networks)
-        if not gsp:
-            actions = actions[:,:2]
-        elif not recurrent:
-            actions = actions.unsqueeze(1)
-        elif recurrent:
-            actions = actions.view(self.batch_size, 1, 1)
         target_actions = networks['target_actor'](states_)
         q_value_ = networks['target_critic'](states_, target_actions)
 
@@ -231,6 +225,7 @@ class NetworkAids(Hyperparameters):
 
         #Critic Update
         networks['critic'].optimizer.zero_grad()
+
         q_value = networks['critic'](states, actions)
         value_loss = Loss(q_value, target)
         value_loss.backward()
@@ -262,9 +257,7 @@ class NetworkAids(Hyperparameters):
             rewards = r[batch]
             states_ = s_[batch]
             dones = d[batch]
-            if not gsp:
-                actions = actions[:,:2]
-            elif not recurrent:
+            if not recurrent:
                 actions = actions.unsqueeze(1)
             elif recurrent:
                 actions = actions.view(actions.shape[0], 1, actions.shape[1])
@@ -300,10 +293,6 @@ class NetworkAids(Hyperparameters):
 
     def learn_TD3(self, networks, gsp = False):
         states, actions, rewards, states_, dones = self.sample_memory(networks)
-        if not gsp:
-            actions = actions[:,:2]
-        else:
-            actions.unsqueeze(1)
 
         target_actions = networks['target_actor'].forward(states_)
         target_actions = target_actions + T.clamp(T.tensor(np.random.normal(scale = 0.2)), -0.5, 0.5)
@@ -354,7 +343,7 @@ class NetworkAids(Hyperparameters):
             return 0
         observations, labels = self.sample_attention_memory(networks)
         networks['learn_step_counter'] += 1
-        networks['attention'].zero_grad()
+        networks['attention'].optimizer.zero_grad()
         pred_headings = networks['attention'](observations)
         loss = Loss(pred_headings, labels.unsqueeze(-1))
         loss.backward()

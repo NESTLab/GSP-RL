@@ -227,7 +227,7 @@ class Actor(NetworkAids):
                 if self.recurrent_gsp:
                     self.gsp_networks = self.build_RDDPG_gsp()
                     self.gsp_networks['learning_scheme'] = 'RDDPG'
-                    self.gsp_networks['output_size'] = 1
+                    self.gsp_networks['output_size'] = self.gsp_network_output
                     #self.gsp_networks['replay'] = ReplayBuffer(self.mem_size, self.gsp_network_input, 1, 'Continuous', use_gsp = True)
                     self.gsp_networks['replay'] = SequenceReplayBuffer(self.mem_size, self.gsp_network_input, self.gsp_network_output, self.gsp_sequence_length)
                     #SequenceReplayBuffer(max_sequence=100, num_observations = self.gsp_network_input, num_actions = 1, seq_len = 5)
@@ -235,21 +235,21 @@ class Actor(NetworkAids):
                 else:
                     self.gsp_networks = self.build_DDPG_gsp()
                     self.gsp_networks['learning_scheme'] = 'DDPG'
-                    self.gsp_networks['output_size'] = 1
-                    self.gsp_networks['replay'] = ReplayBuffer(self.mem_size, self.gsp_network_input, 1, 'Continuous', use_gsp = True)
+                    self.gsp_networks['output_size'] = self.gsp_network_output
+                    self.gsp_networks['replay'] = ReplayBuffer(self.mem_size, self.gsp_network_input, self.gsp_network_output, 'Continuous')
                     self.gsp_networks['learn_step_counter'] = 0
             elif learning_scheme == 'TD3':
                 if self.recurrent_gsp:
                     self.gsp_networks = self.build_RTD3_gsp()
                     self.gsp_networks['learning_scheme'] = 'RTD3'
-                    self.gsp_networks['output_size']  = 1
-                    self.gsp_networks['replay'] = SequenceReplayBuffer(max_sequence=100, num_observations = self.gsp_network_input, num_actions = 1, seq_len = 5)
+                    self.gsp_networks['output_size']  = self.gsp_network_output
+                    self.gsp_networks['replay'] = SequenceReplayBuffer(max_sequence=100, num_observations = self.gsp_network_input, num_actions = self.gsp_network_output, seq_len = 5)
                     self.gsp_networks['learn_step_counter'] = 0
                 else:
                     self.gsp_networks = self.build_TD3_gsp()
                     self.gsp_networks['learning_scheme'] = 'TD3'
                     self.gsp_networks['output_size'] = 1
-                    self.gsp_networks['replay'] = ReplayBuffer(self.mem_size, self.gsp_network_input, 1, 'Continuous', use_gsp = True)
+                    self.gsp_networks['replay'] = ReplayBuffer(self.mem_size, self.gsp_network_input, self.gsp_network_output, 'Continuous')
                     self.gsp_networks['learn_step_counter'] = 0
             else:
                 raise Exception('[Error] gsp learning scheme is not recognised: '+learning_scheme)
@@ -293,10 +293,10 @@ class Actor(NetworkAids):
             'output_size': 1,
             'lr': self.lr
         }
-        print('[INPUT]: ', lstm_nn_args['input_size'])
-        print('[LSTM OUTPUT]', lstm_nn_args['output_size'])
-        print('[DDPG INPUT]', actor_nn_args['input_size'])
-        print('[DDPG OUTPUT]', actor_nn_args['output_size'])
+        # print('[INPUT]: ', lstm_nn_args['input_size'])
+        # print('[LSTM OUTPUT]', lstm_nn_args['output_size'])
+        # print('[DDPG INPUT]', actor_nn_args['input_size'])
+        # print('[DDPG OUTPUT]', actor_nn_args['output_size'])
         return self.make_RDDPG_networks(lstm_nn_args, actor_nn_args, critic_nn_args)
 
     def update_network_parameters(self, tau = None):
@@ -430,8 +430,6 @@ class Actor(NetworkAids):
                 self.gsp_networks['target_critic_1'].save_checkpoint(path, self.gsp)
                 self.gsp_networks['critic_2'].save_checkpoint(path, self.gsp)
                 self.gsp_networks['target_critic_2'].save_checkpoint(path, self.gsp)
-            if self.recurrent_gsp:
-                self.gsp_networks['ee'].save_checkpoint(path)
 
     def load_model(self, path):
         if self.networks['learning_scheme'] == 'DQN' or self.networks['learning_scheme'] == 'DDQN':
@@ -467,8 +465,6 @@ class Actor(NetworkAids):
                 self.gsp_networks['target_critic_1'].load_checkpoint(path, self.gsp)
                 self.gsp_networks['critic_2'].load_checkpoint(path, self.gsp)
                 self.gsp_networks['target_critic_2'].load_checkpoint(path, self.gsp)
-            if self.recurrent_gsp:
-                self.gsp_networks['ee'].load_checkpoint(path)
         
     
 if __name__=='__main__':
