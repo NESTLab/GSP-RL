@@ -340,6 +340,7 @@ class NetworkAids(Hyperparameters):
 
     def learn_attention(self, networks):
         if networks['replay'].mem_ctr < self.gsp_batch_size:
+            print('[Learning Aids] Attention Buffer is not Full: Not Learning', networks['replay'].mem_ctr)
             return 0
         observations, labels = self.sample_attention_memory(networks)
         networks['learn_step_counter'] += 1
