@@ -348,7 +348,7 @@ class NetworkAids(Hyperparameters):
         labels = labels.unsqueeze(-1)
         print('PRED, LABELS')
         for i in range(pred_headings.shape[0]):
-            print(pred_headings[i], labels[i])
+            print(pred_headings[i].item(), labels[i])
         loss = Loss(pred_headings, labels)
         loss.backward()
         networks['attention'].optimizer.step()
