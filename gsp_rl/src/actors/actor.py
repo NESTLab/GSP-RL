@@ -374,18 +374,13 @@ class Actor(NetworkAids):
             return self.learn_TD3(self.networks)
 
     def learn_gsp(self):
-        print('[AGENT] Learning Scheme', self.gsp_networks['learning_scheme'])
         if self.gsp_networks['learning_scheme'] in {'DDPG'}:
-            print('[AGENT] Learning GSP ...')
             self.learn_DDPG(self.gsp_networks, self.gsp, self.recurrent_gsp)
         elif self.gsp_networks['learning_scheme'] in {'RDDPG'}:
-            print('[AGENT] Learning RGSP ...')
             self.learn_RDDPG(self.gsp_networks, self.gsp, self.recurrent_gsp)
         elif self.gsp_networks['learning_scheme'] == 'TD3':
-            print('[AGENT] Learning RTGSP ...')
             self.learn_TD3(self.gsp_networks, self.gsp, self.recurrent_gsp)
         elif self.gsp_networks['learning_scheme'] == 'attention':
-            print('[AGENT] Learning AGSP ...')
             self.learn_attention(self.gsp_networks)
 
     def store_agent_transition(self, s, a, r, s_, d):

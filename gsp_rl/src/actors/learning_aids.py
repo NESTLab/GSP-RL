@@ -339,14 +339,14 @@ class NetworkAids(Hyperparameters):
         return actor_loss.item()
 
     def learn_attention(self, networks):
-        print('[Learning Aids] Learning Attention...........')
         if networks['replay'].mem_ctr < self.gsp_batch_size:
-            print('[Learning Aids] Attention Buffer is not Full: Not Learning', networks['replay'].mem_ctr)
             return 0
         observations, labels = self.sample_attention_memory(networks)
         networks['learn_step_counter'] += 1
         networks['attention'].optimizer.zero_grad()
         pred_headings = networks['attention'](observations)
+        print('[PREDICTIONS]', pred_headings)
+        print('[LABELS]', labels.unsqueeze(-1))
         loss = Loss(pred_headings, labels.unsqueeze(-1))
         loss.backward()
         networks['attention'].optimizer.step()
