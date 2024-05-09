@@ -345,9 +345,11 @@ class NetworkAids(Hyperparameters):
         networks['learn_step_counter'] += 1
         networks['attention'].optimizer.zero_grad()
         pred_headings = networks['attention'](observations)
-        print('[PREDICTIONS]', pred_headings)
-        print('[LABELS]', labels.unsqueeze(-1))
-        loss = Loss(pred_headings, labels.unsqueeze(-1))
+        labels = labels.unsqueeze(-1)
+        print('PRED, LABELS')
+        for i in range(pred_headings.shape[0]):
+            print(pred_headings[i], labels[i])
+        loss = Loss(pred_headings, labels)
         loss.backward()
         networks['attention'].optimizer.step()
         print('[Learning Aids] Attention Loss', loss.item())
