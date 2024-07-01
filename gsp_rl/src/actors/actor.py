@@ -374,6 +374,8 @@ class Actor(NetworkAids):
             return self.learn_TD3(self.networks)
 
     def learn_gsp(self):
+        if self.gsp_networks['replay'].mem_ctr < self.gsp_batch_size:
+                return
         if self.gsp_networks['learning_scheme'] in {'DDPG'}:
             self.learn_DDPG(self.gsp_networks, self.gsp, self.recurrent_gsp)
         elif self.gsp_networks['learning_scheme'] in {'RDDPG'}:
