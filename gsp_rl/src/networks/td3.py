@@ -65,7 +65,10 @@ class TD3ActorNetwork(nn.Module):
         if intention:
             network_name += "_intention"
         print('... loading', network_name, '...')
-        self.load_state_dict(T.load(path + '_' + network_name))
+        if self.device == 'cpu':
+            self.load_stat_dict(T.load(path + '_' + network_name, map_location=T.device('cpu')))
+        else:
+            self.load_state_dict(T.load(path + '_' + network_name))
 
 ############################################################################
 # Critic Network for TD3
