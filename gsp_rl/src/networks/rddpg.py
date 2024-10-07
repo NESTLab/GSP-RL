@@ -63,5 +63,5 @@ class RDDPGCriticNetwork(nn.Module):
     def load_checkpoint(self, path: str, intention: bool = False) -> None:
         path = path+'_recurrent'
         self.ee.load_checkpoint(path, intention)
-        self.actor.load_checkpoint(path, intention)
+        self.critic.load_checkpoint(path, intention)
 
