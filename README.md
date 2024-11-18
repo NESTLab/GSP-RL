@@ -18,7 +18,8 @@ To address the issues identified in the study above, we introdice Global State P
 
 We next reduce the communication size of GSP to limit it to its immediate neighborhood. In our Collective Transport example this results in the immediate neighbors clockwise and counterclockwise of the current agent. This allows us to greatly reduce the scale of communication as the swarm grows and allows us to generalize a method trained on a specific number of robots to any number of robots. These results are to be submitted and a link to the paper will be uploaded shortly. 
 
-[bandwidth (2).pdf](https://github.com/user-attachments/files/17801316/bandwidth.2.pdf)
+<img width="901" alt="Screenshot 2024-11-18 at 9 10 27 AM" src="https://github.com/user-attachments/assets/e4f18c2f-a0e0-4f80-baa1-c01cadd5a224">
+
 
 
 We next study the role memory plays in a distributed system. We introduce two new variations of GSP. Firstly we append a Reccurent Neural Network to the front end of GSP in the form of a LSTM layer. This provides initial short term memory retention of relevant near term history while providing overarching memory of longer term events. This is esspecially important when coming in contact with obstacles in the environment. We term this version of GSP as RGSP.
