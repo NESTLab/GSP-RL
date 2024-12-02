@@ -3,6 +3,8 @@ GSP-RL is a library built on PyTorch for several deep learning predictive method
 
 ![Training_Schemes](https://github.com/user-attachments/assets/801f55b7-fa47-491a-9d1a-501e0b4fe9e7)
 
+[box_plot_comparison (2).pdf](https://github.com/user-attachments/files/17977966/box_plot_comparison.2.pdf)
+
 
 This Library supports 4 common RL Algorithms:
 1. DQN      http://www.nature.com/articles/nature14236
