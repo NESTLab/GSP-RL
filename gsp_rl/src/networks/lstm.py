@@ -1,13 +1,31 @@
+"""LSTM-based Environment Encoder for recurrent RL variants.
+
+Provides the EnvironmentEncoder which maps observation sequences into a
+fixed-size encoding via: Linear(input_size, embedding_size) -> LSTM ->
+Linear(hidden_size, output_size). Used as a component in RDDPG networks.
+
+See Also: docs/modules/networks.md
+"""
 import torch as T
 import torch.nn as nn
 import torch.optim as optim
 
-############################################################################
-# Recurrent Layer for Environment Encoder
-############################################################################
+
 class EnvironmentEncoder(nn.Module):
-    """
-    LSTM Constructor for the network topology
+    """LSTM encoder that transforms observation sequences into fixed encodings.
+
+    Architecture: Linear embedding -> LSTM (multi-layer) -> Linear projection.
+    Composed into RDDPGActorNetwork and RDDPGCriticNetwork. The actor and
+    critic share one encoder instance; target networks get separate instances.
+
+    Note: No optimizer is defined here -- the RDDPG wrapper creates an Adam
+    optimizer over all parameters (encoder + DDPG network).
+
+    Attributes:
+        embedding: Linear(input_size, embedding_size).
+        ee: LSTM(embedding_size, hidden_size, num_layers, batch_first=True).
+        meta_layer: Linear(hidden_size, output_size).
+        name: "Enviroment_Encoder" (historical typo preserved).
     """
     def __init__(
             self,
@@ -19,8 +37,16 @@ class EnvironmentEncoder(nn.Module):
             num_layers: int,
             lr: float
     ) -> None:
-        """
-        Constructor
+        """Initialize EnvironmentEncoder.
+
+        Args:
+            input_size: Raw observation dimensionality.
+            output_size: Encoding dimensionality (meta_param_size).
+            hidden_size: LSTM hidden state size.
+            embedding_size: Linear embedding layer output size.
+            batch_size: Stored but not used internally.
+            num_layers: Number of stacked LSTM layers.
+            lr: Stored but optimizer is created in RDDPG wrapper.
         """
         super().__init__()
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
@@ -48,8 +74,16 @@ class EnvironmentEncoder(nn.Module):
     def forward(
             self,
             observation: T.Tensor,
-    ) -> None:
-        """ Forward Propogation Step """
+    ) -> T.Tensor:
+        """Encode an observation (or sequence) through embedding + LSTM + projection.
+
+        Args:
+            observation: Tensor of shape (seq_len, input_size) or (batch, input_size).
+
+        Returns:
+            Encoding tensor of shape (seq_len, 1, output_size). The middle dim=1
+            comes from the view reshape before LSTM.
+        """
         embed = self.embedding(observation)
         lstm_out, _ = self.ee(embed.view(embed.shape[0], 1, -1))
         out = self.meta_layer(lstm_out)

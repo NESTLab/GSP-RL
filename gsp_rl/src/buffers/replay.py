@@ -1,8 +1,24 @@
+"""Standard SARSD experience replay buffer with circular indexing.
+
+Used by DQN, DDQN, DDPG, TD3, and GSP-DDPG for uniform random experience replay.
+
+See Also: docs/modules/buffers.md
+"""
 import numpy as np
 
+
 class ReplayBuffer():
-    """
-    SARSD Replay Buffer 
+    """Fixed-size circular buffer storing (State, Action, Reward, next_State, Done) tuples.
+
+    Supports both discrete (1D int actions) and continuous (2D float actions)
+    action types. Sampling is uniform random without replacement.
+
+    Attributes:
+        mem_size: Maximum buffer capacity.
+        mem_ctr: Total transitions stored (unbounded, used for circular indexing).
+        action_type: 'Discrete' or 'Continuous'.
+        state_memory: Array of shape (mem_size, num_observations).
+        action_memory: Array of shape (mem_size,) for discrete or (mem_size, num_actions) for continuous.
     """
     def __init__(
             self,
@@ -11,7 +27,14 @@ class ReplayBuffer():
             num_actions: int,
             action_type: str = None,
     ) -> None:
-        """ Constructor """
+        """Initialize replay buffer.
+
+        Args:
+            max_size: Maximum number of transitions to store.
+            num_observations: Observation space dimensionality.
+            num_actions: Action space dimensionality (1 for discrete).
+            action_type: 'Discrete' (int storage) or 'Continuous' (float storage).
+        """
         self.mem_size = max_size
         self.mem_ctr = 0
         self.action_type = action_type

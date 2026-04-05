@@ -1,12 +1,33 @@
+"""Sequence replay buffer for attention-based supervised prediction (A-GSP).
+
+Unlike SARSD buffers, stores (observation_sequence, label) pairs for
+supervised training of the AttentionEncoder. Labels are scalar predictions
+(e.g., predicted heading) stored once per sequence.
+
+See Also: docs/modules/buffers.md
+"""
 import numpy as np
 
+
 class AttentionSequenceReplayBuffer:
+    """Sequence buffer for supervised attention training.
+
+    Two-stage design like SequenceReplayBuffer but stores observations + scalar
+    labels instead of SARSD tuples. The label is stored at the sequence start
+    index in the main buffer.
+
+    Attributes:
+        mem_size: Hardcoded to 10000.
+        seq_len: Observations per sequence.
+        mem_ctr: Total transitions in main buffer.
+        seq_mem_cntr: Current position in staging buffer.
     """
-    Attention Sequence Replay Buffer
-    """
-    def __init__(self, num_observations: int, seq_len:int) -> None:
-        """
-        Constructor
+    def __init__(self, num_observations: int, seq_len: int) -> None:
+        """Initialize attention sequence buffer.
+
+        Args:
+            num_observations: Per-timestep observation dimensionality.
+            seq_len: Number of observations per sequence.
         """
         self.mem_size = 10000
         self.num_observations = num_observations

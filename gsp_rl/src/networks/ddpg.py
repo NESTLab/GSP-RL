@@ -1,19 +1,44 @@
+"""DDPG Actor and Critic networks for continuous action spaces.
+
+Provides DDPGActorNetwork (deterministic policy) and DDPGCriticNetwork
+(state-action value function). Both use fan-in weight initialization.
+Also serves as the base architecture composed by RDDPG wrappers in rddpg.py.
+
+See Also: docs/modules/networks.md
+"""
 import torch as T
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 
-def fanin_init(size, fanin = None):
+
+def fanin_init(size, fanin=None):
+    """Initialize weights using fan-in uniform distribution.
+
+    Args:
+        size: Shape tuple for the weight tensor.
+        fanin: Fan-in value. Defaults to size[0] (input features).
+
+    Returns:
+        Tensor of given size with values uniform in [-1/sqrt(fanin), 1/sqrt(fanin)].
+    """
     fanin = fanin or size[0]
     v = 1. / np.sqrt(fanin)
     return T.Tensor(size).uniform_(-v, v)
 
-############################################################################
-# Actor Network for DDPG
-############################################################################
+
 class DDPGActorNetwork(nn.Module):
-    """
-    DDPG Actor Constructor for the network topology
+    """Deterministic policy network for DDPG.
+
+    Architecture: Linear(input_size, 400) -> ReLU -> Linear(400, 300) -> ReLU
+    -> Linear(300, output_size) -> Tanh * min_max_action.
+
+    Output is bounded to [-min_max_action, min_max_action] via tanh scaling.
+    Used directly for DDPG and as a component inside RDDPGActorNetwork.
+
+    Attributes:
+        min_max_action: Action space bound for tanh scaling.
+        name: Formatted as '{name}_{id}_DDPG' for checkpoint files.
     """
     def __init__(
             self,
@@ -26,8 +51,17 @@ class DDPGActorNetwork(nn.Module):
             name: str = "DDPG_Actor",
             min_max_action: float = 1.0
     ) -> None:
-        """
-        constructor 
+        """Initialize DDPG actor network.
+
+        Args:
+            id: Agent identifier, embedded in checkpoint name.
+            lr: Learning rate for Adam optimizer.
+            input_size: Observation dimensionality (or encoding size for RDDPG).
+            output_size: Action space dimensionality.
+            fc1_dims: First hidden layer width.
+            fc2_dims: Second hidden layer width.
+            name: Base name for checkpoint files.
+            min_max_action: Tanh output scaling factor.
         """
         super().__init__()
 
@@ -61,7 +95,14 @@ class DDPGActorNetwork(nn.Module):
         self.mu.weight.data.uniform_(-init_w, init_w)
 
     def forward(self, x: T.Tensor) -> T.Tensor:
-        """ Forward Propogation Step"""
+        """Compute deterministic action given state.
+
+        Args:
+            x: State tensor of shape (*, input_size).
+
+        Returns:
+            Action tensor of shape (*, output_size), bounded by min_max_action.
+        """
         prob = self.fc1(x)
         prob = self.relu(prob)
         prob = self.fc2(prob)
@@ -91,8 +132,16 @@ class DDPGActorNetwork(nn.Module):
 # Critic Network for DDPG
 ############################################################################
 class DDPGCriticNetwork(nn.Module):
-    """
-    DDPG Critic Constructor for the network topology
+    """State-action value function (Q-network) for DDPG.
+
+    Architecture: Linear(input_size, 400) -> ReLU -> Linear(400, 300) -> ReLU
+    -> Linear(300, 1). Concatenates state and action internally in forward().
+
+    IMPORTANT: input_size must equal state_dim + action_dim because forward()
+    calls T.cat([state, action], dim=-1) before the first layer.
+
+    Attributes:
+        name: Formatted as '{name}_{id}_DDPG' for checkpoint files.
     """
     def __init__(self,
                  id: int,
@@ -103,9 +152,16 @@ class DDPGCriticNetwork(nn.Module):
                  fc2_dims: int = 300,
                  name: str = "DDPG_Critic"
     ):
-        """
-        - input_size: This should match the input size to your actor network
-        - actor_ouput_size: This should be the same as the output_size of your actor network
+        """Initialize DDPG critic network.
+
+        Args:
+            id: Agent identifier, embedded in checkpoint name.
+            lr: Learning rate for Adam optimizer.
+            input_size: Must be state_dim + action_dim (state-action concat).
+            output_size: Kept for interface consistency (output is always 1).
+            fc1_dims: First hidden layer width.
+            fc2_dims: Second hidden layer width.
+            name: Base name for checkpoint files.
         """
         super().__init__()
 
@@ -134,9 +190,15 @@ class DDPGCriticNetwork(nn.Module):
         self.q.weight.data.uniform_(-init_w, init_w)
 
     def forward(self, state: T.Tensor, action: T.Tensor) -> T.Tensor:
+        """Compute Q-value for a state-action pair.
+
+        Args:
+            state: State tensor of shape (batch, state_dim).
+            action: Action tensor of shape (batch, action_dim).
+
+        Returns:
+            Q-value tensor of shape (batch, 1).
         """
-        Forward Propogation Step"""
-        
         action_value = self.fc1(T.cat([state, action], dim = -1))
         action_value = self.relu(action_value)
         action_value = self.fc2(action_value)

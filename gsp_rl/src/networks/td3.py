@@ -1,14 +1,28 @@
+"""Twin Delayed DDPG (TD3) Actor and Critic networks.
+
+Same architecture family as DDPG but with required hidden layer dims and
+separate learning rate params (alpha for actor, beta for critic). TD3 uses
+two critic instances to reduce overestimation; the twin-critic logic is in
+the learn method (NetworkAids.learn_TD3), not in the network classes.
+
+See Also: docs/modules/networks.md
+"""
 import torch as T
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-############################################################################
-# Actor Network for TD3
-############################################################################
+
 class TD3ActorNetwork(nn.Module):
-    """
-    TD3 Actor Constructor for the network topology
+    """Deterministic policy network for TD3.
+
+    Same architecture as DDPGActorNetwork but uses default PyTorch weight
+    initialization (no fanin_init) and requires fc1_dims/fc2_dims explicitly.
+    Uses 'alpha' learning rate (vs DDPG's 'lr').
+
+    Attributes:
+        min_max_action: Action space bound for tanh scaling.
+        name: Formatted as '{name}_{id}_TD3' for checkpoint files.
     """
     def __init__(
             self,
@@ -41,8 +55,13 @@ class TD3ActorNetwork(nn.Module):
         self.to(self.device)
 
     def forward(self, state: T.Tensor) -> T.Tensor:
-        """
-        Forward Propogation Step
+        """Compute deterministic action given state.
+
+        Args:
+            state: State tensor of shape (*, input_size).
+
+        Returns:
+            Action tensor of shape (*, output_size), bounded by min_max_action.
         """
         prob = F.relu(self.fc1(state))
         prob = F.relu(self.fc2(prob))
@@ -74,8 +93,15 @@ class TD3ActorNetwork(nn.Module):
 # Critic Network for TD3
 ############################################################################
 class TD3CriticNetwork(nn.Module):
-    """
-    TD3 Critic Constructor for the network topology
+    """State-action value function (Q-network) for TD3.
+
+    Same architecture as DDPGCriticNetwork. TD3 uses two instances
+    (critic_1, critic_2) and takes the min for target computation.
+    Concatenates state and action with dim=1 in forward().
+    Uses 'beta' learning rate (vs DDPG's 'lr').
+
+    Attributes:
+        name: Formatted as '{name}_{id}_TD3' for checkpoint files.
     """
     def __init__(
             self,
@@ -105,8 +131,14 @@ class TD3CriticNetwork(nn.Module):
         self.to(self.device)
 
     def forward(self, state: T.Tensor, action: T.Tensor) -> T.Tensor:
-        """
-        Forward Propogation Step
+        """Compute Q-value for a state-action pair.
+
+        Args:
+            state: State tensor of shape (batch, state_dim).
+            action: Action tensor of shape (batch, action_dim).
+
+        Returns:
+            Q-value tensor of shape (batch, 1).
         """
         q1_action_value = F.relu(self.fc1(T.cat([state, action], dim = 1)))
         q1_action_value = F.relu(self.fc2(q1_action_value))

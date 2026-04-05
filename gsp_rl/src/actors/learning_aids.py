@@ -1,3 +1,16 @@
+"""Network factory methods, learning algorithms, and hyperparameter management.
+
+Contains the three-level class hierarchy base:
+- Hyperparameters: Loads and stores all config values from YAML dict.
+- NetworkAids(Hyperparameters): Factory methods (make_*_networks), learning
+  algorithms (learn_*), action selection (*_choose_action), and memory
+  management (sample_memory, store_transition).
+
+Actor (in actor.py) inherits from NetworkAids, completing the chain:
+Actor -> NetworkAids -> Hyperparameters.
+
+See Also: docs/modules/actors.md, docs/algorithms.md
+"""
 from gsp_rl.src.networks import (
     DQN,
     DDQN,
@@ -21,6 +34,14 @@ Loss = nn.MSELoss()
 
 
 class Hyperparameters:
+    """Configuration container loaded from a YAML config dict.
+
+    Maps YAML keys to instance attributes. Notable name mappings:
+    - GSP_LEARNING_FREQUENCY -> self.gsp_learning_offset
+    - REPLACE_TARGET_COUNTER -> self.replace_target_ctr
+
+    Also initializes self.time_step = 0 (used by TD3 warmup).
+    """
     def __init__(self, config):
         self.gamma = config['GAMMA']
         self.tau = config['TAU']
@@ -45,6 +66,14 @@ class Hyperparameters:
         self.time_step = 0
 
 class NetworkAids(Hyperparameters):
+    """Network factory, learning algorithms, action selection, and memory management.
+
+    All methods operate on a 'networks' dict (plain dict, not a class) that
+    contains the neural networks, replay buffer, learning scheme string, and
+    step counter. This dict is either self.networks or self.gsp_networks,
+    passed explicitly to allow the same learn/action methods to serve both
+    the main action network and the GSP prediction network.
+    """
     def __init__(self, config):
         super().__init__(config)
     def make_DQN_networks(self, nn_args):
