@@ -1,17 +1,33 @@
+"""Double Deep Q-Network (DDQN) for discrete action spaces.
+
+Same architecture as DQN. The double-Q trick is implemented in the learn
+method (NetworkAids.learn_DDQN), not in the network itself: q_eval selects
+actions, q_next evaluates them, reducing overestimation bias.
+
+See Also: docs/modules/networks.md
+"""
 import torch as T
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-############################################################################
-# Action Network for DDQN
-############################################################################
+
 class DDQN(nn.Module):
-    """
-    DDQN Constructor for the network topology
+    """Feedforward Q-network for Double DQN.
+
+    Architecturally identical to DQN. The double-Q decoupling happens in
+    the learn loop, not in the network structure.
+
+    Attributes:
+        fc1: First hidden layer (input_size -> fc1_dims).
+        fc2: Second hidden layer (fc1_dims -> fc2_dims).
+        fc3: Output layer (fc2_dims -> output_size), produces Q-values.
+        optimizer: Adam with weight_decay=1e-4.
+        loss: MSELoss instance.
+        device: Auto-detected cuda:0 or cpu.
     """
     def __init__(
-            self, 
+            self,
             id: int,
             lr: float,
             input_size: int,
@@ -20,8 +36,16 @@ class DDQN(nn.Module):
             fc2_dims: int = 128,
             name: str = 'DDQN'
     ) -> None:
-        """
-        constructor 
+        """Initialize DDQN network.
+
+        Args:
+            id: Agent identifier.
+            lr: Learning rate for Adam optimizer.
+            input_size: Observation space dimensionality.
+            output_size: Number of discrete actions.
+            fc1_dims: First hidden layer width.
+            fc2_dims: Second hidden layer width.
+            name: Network name for checkpoint file naming.
         """
         super().__init__()
 
@@ -40,8 +64,13 @@ class DDQN(nn.Module):
         self.to(self.device)
 
     def forward(self, state: T.Tensor) -> T.Tensor:
-        """
-        forward propogation of state through the network
+        """Compute Q-values for all actions given a state.
+
+        Args:
+            state: Observation tensor of shape (*, input_size).
+
+        Returns:
+            Q-values tensor of shape (*, output_size).
         """
         x = F.relu(self.fc1(state))
         x1 = F.relu(self.fc2(x))

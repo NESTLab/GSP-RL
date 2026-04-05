@@ -1,3 +1,14 @@
+"""Main agent class for GSP-RL.
+
+Provides the Actor class -- the primary public API for creating RL agents.
+Actor builds and manages both the main action-selection network and the
+optional GSP (Global State Prediction) network. Inherits learning
+algorithms and network factories from NetworkAids.
+
+Inheritance: Actor -> NetworkAids -> Hyperparameters.
+
+See Also: docs/modules/actors.md
+"""
 import torch as T
 import torch.nn as nn
 import torch.nn.functional as F
@@ -13,10 +24,20 @@ from gsp_rl.src.buffers import(
 )
 from gsp_rl.src.actors.learning_aids import NetworkAids
 
+
 class Actor(NetworkAids):
-    '''
-    This class will be the foundation class for Agent and will hold all specific functions
-    '''
+    """Top-level agent class that builds networks, selects actions, and learns.
+
+    Manages two network dicts:
+    - self.networks: Main action-selection network (DQN/DDQN/DDPG/TD3/RDDPG).
+    - self.gsp_networks: Optional GSP prediction network (DDPG-GSP/RDDPG-GSP/A-GSP).
+
+    When GSP is enabled, the GSP prediction is concatenated with the raw
+    observation to form an augmented input (network_input_size = input_size +
+    gsp_output_size) for the main action network.
+
+    See docs/class-graph.md for the networks dict schema per algorithm.
+    """
     def __init__(
             self,
             id: int,

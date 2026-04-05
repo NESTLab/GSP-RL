@@ -1,23 +1,35 @@
+"""Recurrent DDPG (RDDPG) network wrappers.
+
+Composes EnvironmentEncoder (LSTM) with standard DDPG actor/critic networks.
+The encoder transforms observation sequences into fixed-size encodings that
+replace raw state as input to the DDPG networks.
+
+Architecture:
+    State -> EnvironmentEncoder -> encoding -> DDPGActorNetwork -> Action
+    State -> EnvironmentEncoder -> encoding -> DDPGCriticNetwork(encoding, action) -> Q-value
+
+In make_RDDPG_networks: actor and critic share one EnvironmentEncoder
+instance (shared_ee), while target networks get separate encoder instances
+for proper gradient flow isolation.
+
+See Also: docs/modules/networks.md
+"""
 import torch as T
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
-"""
-Note that the EE for the actor and the critic are the same network
 
-                            State, Action
-                              |      |
-                              EE     |
-                              /\     |
-                             /  \    |
-                            /    \   |
-                           /      \  |
-                        Actor    Critic
-                          |         |
-                        Action    Value
-"""
 
 class RDDPGActorNetwork(nn.Module):
+    """RDDPG actor: EnvironmentEncoder + DDPGActorNetwork composition.
+
+    Owns an Adam optimizer over all parameters (encoder + DDPG actor).
+    Device is inherited from the encoder.
+
+    Attributes:
+        ee: EnvironmentEncoder (LSTM-based).
+        actor: DDPGActorNetwork.
+    """
     def __init__(self, environmental_encoder, ddpg_actor):
         super().__init__()
         self.ee = environmental_encoder
@@ -26,6 +38,14 @@ class RDDPGActorNetwork(nn.Module):
         self.optimizer = optim.Adam(self.parameters(), lr = ddpg_actor.lr, weight_decay = 1e-4)
 
     def forward(self, x: T.Tensor) -> T.Tensor:
+        """Encode observation through LSTM, then compute action via DDPG actor.
+
+        Args:
+            x: Observation tensor of shape (seq_len, input_size).
+
+        Returns:
+            Action tensor of shape (seq_len, 1, output_size).
+        """
         encoding = self.ee(x)
         mu = self.actor(encoding)
         return mu
@@ -42,6 +62,16 @@ class RDDPGActorNetwork(nn.Module):
 
 
 class RDDPGCriticNetwork(nn.Module):
+    """RDDPG critic: EnvironmentEncoder + DDPGCriticNetwork composition.
+
+    Owns an Adam optimizer over all parameters (encoder + DDPG critic).
+    Note: save_checkpoint does NOT save the encoder (assumed saved by actor).
+    load_checkpoint DOES load the encoder.
+
+    Attributes:
+        ee: EnvironmentEncoder (LSTM-based).
+        critic: DDPGCriticNetwork.
+    """
     def __init__(self, environmental_encoder, ddpg_critic):
         super().__init__()
         self.ee = environmental_encoder
@@ -50,6 +80,15 @@ class RDDPGCriticNetwork(nn.Module):
         self.optimizer = optim.Adam(self.parameters(), lr = ddpg_critic.lr, weight_decay = 1e-4)
     
     def forward(self, state: T.Tensor, action: T.Tensor) -> T.Tensor:
+        """Encode state through LSTM, then compute Q-value via DDPG critic.
+
+        Args:
+            state: Observation tensor of shape (seq_len, input_size).
+            action: Action tensor of shape (seq_len, action_dim).
+
+        Returns:
+            Q-value tensor of shape (seq_len, 1, 1).
+        """
         encoding = self.ee(state)
         action_value = self.critic(encoding, action)
         return action_value

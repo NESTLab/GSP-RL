@@ -1,18 +1,36 @@
+"""Attention-based encoder for A-GSP (Attention Global State Prediction).
+
+Provides SelfAttention (multi-head), TransformerBlock (attention + feedforward
+with skip connections), and AttentionEncoder (full encoder with positional
+embeddings that outputs bounded predictions). Used for supervised global
+state prediction from observation sequences.
+
+See Also: docs/modules/networks.md
+"""
 import torch as T
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-############################################################################
-# Self Attention 
-############################################################################
+
 class SelfAttention(nn.Module):
-    """
-    Self Attention Constructor
+    """Multi-head self-attention layer.
+
+    Splits embed_size into `heads` parallel attention heads of size
+    head_dim = embed_size // heads. Uses Einstein summation for the
+    attention computation.
+
+    Attributes:
+        head_dim: Dimension per attention head.
+        values, keys, query: Linear projections (head_dim -> head_dim, no bias).
+        fc_out: Output projection (embed_size -> embed_size).
     """
     def __init__(self, embed_size: int, heads: int) -> None:
-        """
-        Constructor
+        """Initialize multi-head self-attention.
+
+        Args:
+            embed_size: Total embedding dimension (must be divisible by heads).
+            heads: Number of parallel attention heads.
         """
         super().__init__()
         self.embed_size = embed_size
@@ -35,7 +53,17 @@ class SelfAttention(nn.Module):
             query: T.Tensor,
             mask: bool = None
     ) -> T.Tensor:
-        """ Forward Propogation Step"""
+        """Compute multi-head self-attention.
+
+        Args:
+            values: Shape (N, value_len, embed_size).
+            keys: Shape (N, key_len, embed_size).
+            query: Shape (N, query_len, embed_size).
+            mask: Optional attention mask (for decoder use).
+
+        Returns:
+            Attention output of shape (N, query_len, embed_size).
+        """
         # mask is only for the decoder
         N = query.shape[0]
         value_len, key_len, query_len = values.shape[1], keys.shape[1], query.shape[1]
@@ -64,12 +92,19 @@ class SelfAttention(nn.Module):
 # Transformer
 ############################################################################
 class TransformerBlock(nn.Module):
-    """
-    Transformer Constructor
+    """Single transformer encoder block with self-attention and feedforward.
+
+    Structure: SelfAttention -> LayerNorm (skip) -> FeedForward -> LayerNorm (skip).
+    Both skip connections use dropout.
     """
     def __init__(self, embed_size: int, heads: int, dropout: float, forward_expansion: float):
-        """
-        Constructor 
+        """Initialize transformer block.
+
+        Args:
+            embed_size: Embedding dimension.
+            heads: Number of attention heads.
+            dropout: Dropout probability.
+            forward_expansion: Feedforward hidden layer multiplier.
         """
         super().__init__()
         self.attention = SelfAttention(embed_size, heads)
@@ -105,13 +140,26 @@ class TransformerBlock(nn.Module):
 # Attention Encoder
 ############################################################################
 class AttentionEncoder(nn.Module):
-    """
-    Attention Encoder Encoder 
+    """Attention-based encoder for A-GSP global state prediction.
+
+    Processes a sequence of observations into a bounded scalar/vector prediction.
+    Architecture: word_embedding (obs -> scalar) + positional_embedding ->
+    TransformerBlock -> flatten -> Linear -> Tanh * min_max_action.
+
+    Used for supervised prediction: input is (N, seq_len, obs_size),
+    output is (N, output_size) bounded by min_max_action.
+
+    Attributes:
+        word_embedding: Sequential(Linear -> ReLU -> Linear) reducing each obs to 1D.
+        position_embedding: nn.Embedding(max_length, embed_size) for causality.
+        layers: ModuleList with a single TransformerBlock.
+        fc_out: Linear(embed_size * max_length, output_size) on flattened output.
+        name: "Attention_Encoder" for checkpoint files.
     """
     def __init__(
             self,
-            input_size:int,
-            output_size:int,
+            input_size: int,
+            output_size: int,
             min_max_action: float,
             encode_size: int,
             embed_size: int,
@@ -121,7 +169,20 @@ class AttentionEncoder(nn.Module):
             dropout: float,
             max_length: int,
     ) -> None:
-        """ Constructor """
+        """Initialize AttentionEncoder.
+
+        Args:
+            input_size: Per-timestep observation dimensionality.
+            output_size: Prediction dimensionality.
+            min_max_action: Tanh output scaling factor.
+            encode_size: Unused (kept for interface compatibility).
+            embed_size: Embedding/attention dimension.
+            hidden_size: Word embedding hidden layer size.
+            heads: Number of attention heads.
+            forward_expansion: Transformer feedforward multiplier.
+            dropout: Dropout probability.
+            max_length: Maximum sequence length (for positional embedding).
+        """
         super().__init__()
         # masked_length is the max length of a sequence, so for us it is however long we want our sequences to be when training 
         self.min_max_action = min_max_action
@@ -146,7 +207,15 @@ class AttentionEncoder(nn.Module):
         self.name = 'Attention_Encoder'
 
     def forward(self, x: T.Tensor, mask: bool = None) -> T.Tensor:
-        """ Forward Propogation Step """
+        """Encode observation sequence into a bounded prediction.
+
+        Args:
+            x: Observation sequence of shape (N, seq_len, obs_size).
+            mask: Optional attention mask.
+
+        Returns:
+            Prediction tensor of shape (N, output_size), bounded by min_max_action.
+        """
         N, seq_len, obs_size = x.shape
         positions = T.arange(0, seq_len).expand(N, seq_len).to(self.device)
 

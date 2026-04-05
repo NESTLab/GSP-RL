@@ -1,8 +1,28 @@
+"""Two-stage sequence replay buffer for recurrent RL (RDDPG-GSP).
+
+Accumulates individual transitions in a staging buffer until a full sequence
+of length seq_len is collected, then flushes the entire sequence to the main
+buffer. Sampling returns batches of complete sequences.
+
+See Also: docs/modules/buffers.md
+"""
 import numpy as np
 
+
 class SequenceReplayBuffer:
-    """
-    Sequence Replay Buffer
+    """Sequence-based replay buffer with staging for temporal data.
+
+    Two-stage design:
+    1. Stage buffer (seq_*_memory): accumulates transitions one at a time.
+    2. Main buffer (*_memory): receives complete sequences when stage is full.
+
+    Total capacity is max_sequence * seq_len transitions.
+
+    Attributes:
+        mem_size: Total capacity (max_sequence * seq_len).
+        seq_len: Sequence length before flush to main buffer.
+        mem_ctr: Total transitions in main buffer (unbounded for circular indexing).
+        seq_mem_cntr: Current position in staging buffer.
     """
     def __init__(
             self,
@@ -11,8 +31,13 @@ class SequenceReplayBuffer:
             num_actions: int,
             seq_len: int
     ) -> None:
-        """
-        Constructor 
+        """Initialize sequence replay buffer.
+
+        Args:
+            max_sequence: Number of complete sequences the main buffer can hold.
+            num_observations: Observation space dimensionality.
+            num_actions: Action space dimensionality.
+            seq_len: Length of each sequence.
         """
         self.mem_size = max_sequence*seq_len
         self.num_observations = num_observations

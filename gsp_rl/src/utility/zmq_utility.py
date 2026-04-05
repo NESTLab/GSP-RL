@@ -1,6 +1,18 @@
+"""ZMQ binary message parsing for CoppeliaSim robotics simulation.
+
+Provides ZMQ_Utility for unpacking C++ struct-packed binary messages from a
+CoppeliaSim (formerly V-REP) robotics simulator. Handles observations,
+rewards, failures, stats, and action serialization for multi-robot swarm
+experiments.
+
+Not used by the core RL library -- only by external robotics integration code.
+
+See Also: docs/modules/utility.md
+"""
 from collections import namedtuple
 from struct import pack, unpack, Struct
 import numpy as np
+
 
 class ZMQ_Utility:
     def __init__(self):
