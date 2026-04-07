@@ -58,14 +58,16 @@ class TestDelayedPolicyUpdate:
         assert changed, "Critic should update on every learn step"
 
     def test_actor_does_not_update_on_non_delayed_step(self, config):
-        """Actor should NOT update when learn_step_counter % UPDATE_ACTOR_ITER != 0."""
+        """Actor should NOT update when learn_step_counter % UPDATE_ACTOR_ITER != 0.
+        Note: learn_TD3 increments counter BEFORE checking, so to get a critic-only
+        step (counter after increment is odd), set counter to 0 (becomes 1, 1%2!=0)."""
         config["UPDATE_ACTOR_ITER"] = 2
         actor = Actor(id=1, config=config, network="TD3",
                       input_size=8, output_size=2, min_max_action=1.0, meta_param_size=1)
         _fill_buffer(actor, 30)
 
-        # Force counter to an odd number so next learn is a critic-only step
-        actor.networks["learn_step_counter"] = 1
+        # Counter=0 -> incremented to 1 -> 1%2!=0 -> critic-only step
+        actor.networks["learn_step_counter"] = 0
 
         actor_before = _get_params_snapshot(actor.networks["actor"])
         actor.learn()
@@ -78,14 +80,16 @@ class TestDelayedPolicyUpdate:
         assert unchanged, "Actor should NOT update on critic-only steps"
 
     def test_actor_updates_on_delayed_step(self, config):
-        """Actor SHOULD update when learn_step_counter % UPDATE_ACTOR_ITER == 0."""
+        """Actor SHOULD update when learn_step_counter % UPDATE_ACTOR_ITER == 0.
+        Note: learn_TD3 increments counter BEFORE checking, so to get an actor
+        update step (counter after increment is even), set counter to 1 (becomes 2, 2%2==0)."""
         config["UPDATE_ACTOR_ITER"] = 2
         actor = Actor(id=1, config=config, network="TD3",
                       input_size=8, output_size=2, min_max_action=1.0, meta_param_size=1)
         _fill_buffer(actor, 30)
 
-        # Force counter to even so next learn includes actor update
-        actor.networks["learn_step_counter"] = 0
+        # Counter=1 -> incremented to 2 -> 2%2==0 -> actor update step
+        actor.networks["learn_step_counter"] = 1
 
         actor_before = _get_params_snapshot(actor.networks["actor"])
         actor.learn()
@@ -98,14 +102,15 @@ class TestDelayedPolicyUpdate:
         assert changed, "Actor should update on delayed update steps"
 
     def test_target_only_updates_on_actor_update_step(self, config):
-        """Target networks should only update when the actor updates (delayed)."""
+        """Target networks should only update when the actor updates (delayed).
+        Counter=0 -> incremented to 1 -> critic-only -> no target update."""
         config["UPDATE_ACTOR_ITER"] = 2
         actor = Actor(id=1, config=config, network="TD3",
                       input_size=8, output_size=2, min_max_action=1.0, meta_param_size=1)
         _fill_buffer(actor, 30)
 
-        # Critic-only step (counter=1, UPDATE_ACTOR_ITER=2)
-        actor.networks["learn_step_counter"] = 1
+        # Counter=0 -> incremented to 1 -> 1%2!=0 -> critic-only, no target update
+        actor.networks["learn_step_counter"] = 0
         target_before = _get_params_snapshot(actor.networks["target_actor"])
         actor.learn()
         target_after = _get_params_snapshot(actor.networks["target_actor"])
@@ -150,23 +155,22 @@ class TestGradientIsolation:
 class TestTargetPolicySmoothing:
     """Target actions should have per-dimension noise, not scalar noise."""
 
-    def test_noise_is_per_action_dimension(self, config):
-        """For multi-dim actions, noise should differ across dimensions."""
+    def test_multi_dim_action_learning_does_not_crash(self, config):
+        """TD3 with multi-dimensional actions should train without error."""
         actor = Actor(id=1, config=config, network="TD3",
                       input_size=8, output_size=4, min_max_action=1.0, meta_param_size=1)
-        _fill_buffer(actor, 30)
+        # Fill buffer with correct action dimensionality
+        for _ in range(30):
+            s = np.random.randn(8).astype(np.float32)
+            a = np.random.randn(4).astype(np.float32)
+            r = np.random.randn()
+            s_ = np.random.randn(8).astype(np.float32)
+            d = bool(np.random.rand() > 0.8)
+            actor.store_transition(s, a, r, s_, d, actor.networks)
 
-        # Run many learn steps and collect target action noise patterns
-        # If noise is scalar, all action dims get the same perturbation every time
-        # If noise is per-dim, they differ
-        np.random.seed(42)
-        actor.networks["learn_step_counter"] = 0
-        # We can't directly observe the noise inside learn_TD3, but we can
-        # test the behavior indirectly: with scalar noise, target_actions[:, 0]
-        # and target_actions[:, 1] would be shifted by the same amount.
-        # For now, this test documents the expected behavior.
-        # A proper test requires refactoring learn_TD3 to accept a noise source.
-        pass  # Placeholder — noise injection is not testable without refactoring
+        # Should not crash — verifies noise shape matches action dims
+        for _ in range(5):
+            actor.learn()
 
 
 class TestWeightInitialization:

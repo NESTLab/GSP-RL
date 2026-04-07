@@ -7,10 +7,18 @@ the learn method (NetworkAids.learn_TD3), not in the network classes.
 
 See Also: docs/modules/networks.md
 """
+import numpy as np
 import torch as T
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+
+
+def fanin_init(size, fanin=None):
+    """Fan-in weight initialization matching DDPG (Lillicrap et al. 2015)."""
+    fanin = fanin or size[0]
+    v = 1. / np.sqrt(fanin)
+    return T.Tensor(size).uniform_(-v, v)
 
 
 class TD3ActorNetwork(nn.Module):
@@ -49,10 +57,18 @@ class TD3ActorNetwork(nn.Module):
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
         self.mu = nn.Linear(self.fc2_dims, self.output_dims)
 
+        self.init_weights(3e-3)
+
         self.optimizer = optim.Adam(self.parameters(), lr = alpha, weight_decay = 1e-4)
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
 
         self.to(self.device)
+
+    def init_weights(self, init_w: float) -> None:
+        """Initialize weights using fan-in init (matching DDPG)."""
+        self.fc1.weight.data = fanin_init(self.fc1.weight.data.size())
+        self.fc2.weight.data = fanin_init(self.fc2.weight.data.size())
+        self.mu.weight.data.uniform_(-init_w, init_w)
 
     def forward(self, state: T.Tensor) -> T.Tensor:
         """Compute deterministic action given state.

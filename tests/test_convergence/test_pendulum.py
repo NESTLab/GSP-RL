@@ -6,10 +6,10 @@ from gsp_rl.src.actors.actor import Actor
 
 def _make_config():
     return {
-        "GAMMA": 0.99, "TAU": 0.005, "ALPHA": 0.001, "BETA": 0.002,
+        "GAMMA": 0.98, "TAU": 0.005, "ALPHA": 0.001, "BETA": 0.001,
         "LR": 0.001, "EPSILON": 1.0, "EPS_MIN": 0.01, "EPS_DEC": 0.0,
-        "BATCH_SIZE": 64, "MEM_SIZE": 10000, "REPLACE_TARGET_COUNTER": 100,
-        "NOISE": 0.1, "UPDATE_ACTOR_ITER": 2, "WARMUP": 100,
+        "BATCH_SIZE": 100, "MEM_SIZE": 50000, "REPLACE_TARGET_COUNTER": 100,
+        "NOISE": 0.1, "UPDATE_ACTOR_ITER": 2, "WARMUP": 200,
         "GSP_LEARNING_FREQUENCY": 1000, "GSP_BATCH_SIZE": 16,
     }
 

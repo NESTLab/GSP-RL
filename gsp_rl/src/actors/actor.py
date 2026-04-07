@@ -392,7 +392,7 @@ class Actor(NetworkAids):
             return self.learn_DDPG(self.networks)
 
         elif self.networks['learning_scheme'] == 'TD3':
-            self.update_network_parameters()
+            # Target update moved inside learn_TD3 — only on actor update steps
             return self.learn_TD3(self.networks)
 
     def learn_gsp(self):
