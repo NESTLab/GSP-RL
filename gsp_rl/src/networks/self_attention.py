@@ -236,7 +236,7 @@ class AttentionEncoder(nn.Module):
     def load_checkpoint(self, path: str) -> None:
         """ Load Model """
         print('... loading', self.name, '...')
-        if self.device == 'cpu':
-            self.load_stat_dict(T.load(path + '_' + self.name, map_location=T.device('cpu')))
+        if str(self.device) == 'cpu':
+            self.load_state_dict(T.load(path + '_' + self.name, map_location=T.device('cpu')))
         else:
             self.load_state_dict(T.load(path + '_' + self.name))

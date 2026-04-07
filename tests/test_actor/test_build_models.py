@@ -8,13 +8,21 @@ config_path = os.path.join(containing_folder, 'config.yml')
 with open(config_path, 'r') as file:
     config = yaml.safe_load(file)
 
+# DQN/DDQN default hidden dims (from DQN/DDQN constructors)
+DQN_FC1_DIMS = 64
+DQN_FC2_DIMS = 128
+
+# DDPG/TD3 default hidden dims (from DDPGActorNetwork/DDPGCriticNetwork constructors)
+DDPG_FC1_DIMS = 400
+DDPG_FC2_DIMS = 300
+
 def test_build_networks_DQN():
     nn_args = {
             'id':1,
             'network': 'DQN',
             'input_size':32,
             'output_size':2,
-            'meta_param_size':2, 
+            'meta_param_size':2,
             'gsp':False,
             'recurrent_gsp':False,
             'attention': False,
@@ -29,21 +37,21 @@ def test_build_networks_DQN():
     networks = actor.networks
     for name, param in networks['q_eval'].named_parameters():
         shape = tuple(param.size())
-        if name == 'fc1.weights':
-            assert(shape == (nn_args['fc1_dims'], nn_args['input_size']))
-        if name == 'fc2.weights':
-            assert(shape == (nn_args['fc2_dims'], nn_args['fc1_dims']))
-        if name == 'fc3.weights':
-            assert(shape == (nn_args['output_size'], nn_args['fc2_dims']))
-    
+        if name == 'fc1.weight':
+            assert(shape == (DQN_FC1_DIMS, nn_args['input_size']))
+        if name == 'fc2.weight':
+            assert(shape == (DQN_FC2_DIMS, DQN_FC1_DIMS))
+        if name == 'fc3.weight':
+            assert(shape == (nn_args['output_size'], DQN_FC2_DIMS))
+
     for name, param in networks['q_next'].named_parameters():
         shape = tuple(param.size())
-        if name == 'fc1.weights':
-            assert(shape == (nn_args['fc1_dims'], nn_args['input_size']))
-        if name == 'fc2.weights':
-            assert(shape == (nn_args['fc2_dims'], nn_args['fc1_dims']))
-        if name == 'fc3.weights':
-            assert(shape == (nn_args['output_size'], nn_args['fc2_dims']))
+        if name == 'fc1.weight':
+            assert(shape == (DQN_FC1_DIMS, nn_args['input_size']))
+        if name == 'fc2.weight':
+            assert(shape == (DQN_FC2_DIMS, DQN_FC1_DIMS))
+        if name == 'fc3.weight':
+            assert(shape == (nn_args['output_size'], DQN_FC2_DIMS))
 
 def test_build_networks_DDQN():
     nn_args = {
@@ -51,7 +59,7 @@ def test_build_networks_DDQN():
             'network': 'DDQN',
             'input_size':32,
             'output_size':2,
-            'meta_param_size':2, 
+            'meta_param_size':2,
             'gsp':False,
             'recurrent_gsp':False,
             'attention': False,
@@ -66,21 +74,21 @@ def test_build_networks_DDQN():
     networks = actor.networks
     for name, param in networks['q_eval'].named_parameters():
         shape = tuple(param.size())
-        if name == 'fc1.weights':
-            assert(shape == (nn_args['fc1_dims'], nn_args['input_size']))
-        if name == 'fc2.weights':
-            assert(shape == (nn_args['fc2_dims'], nn_args['fc1_dims']))
-        if name == 'fc3.weights':
-            assert(shape == (nn_args['output_size'], nn_args['fc2_dims']))
-    
+        if name == 'fc1.weight':
+            assert(shape == (DQN_FC1_DIMS, nn_args['input_size']))
+        if name == 'fc2.weight':
+            assert(shape == (DQN_FC2_DIMS, DQN_FC1_DIMS))
+        if name == 'fc3.weight':
+            assert(shape == (nn_args['output_size'], DQN_FC2_DIMS))
+
     for name, param in networks['q_next'].named_parameters():
         shape = tuple(param.size())
-        if name == 'fc1.weights':
-            assert(shape == (nn_args['fc1_dims'], nn_args['input_size']))
-        if name == 'fc2.weights':
-            assert(shape == (nn_args['fc2_dims'], nn_args['fc1_dims']))
-        if name == 'fc3.weights':
-            assert(shape == (nn_args['output_size'], nn_args['fc2_dims']))
+        if name == 'fc1.weight':
+            assert(shape == (DQN_FC1_DIMS, nn_args['input_size']))
+        if name == 'fc2.weight':
+            assert(shape == (DQN_FC2_DIMS, DQN_FC1_DIMS))
+        if name == 'fc3.weight':
+            assert(shape == (nn_args['output_size'], DQN_FC2_DIMS))
 
 def test_build_networks_DDPG():
     nn_args = {
@@ -88,7 +96,7 @@ def test_build_networks_DDPG():
             'network': 'DDPG',
             'input_size':32,
             'output_size':2,
-            'meta_param_size':2, 
+            'meta_param_size':2,
             'gsp':False,
             'recurrent_gsp':False,
             'attention': False,
@@ -103,39 +111,39 @@ def test_build_networks_DDPG():
     networks = actor.networks
     for name, param in networks['actor'].named_parameters():
         shape = tuple(param.size())
-        if name == 'fc1.weights':
-            assert(shape == (nn_args['fc1_dims'], nn_args['input_size']))
-        if name == 'fc2.weights':
-            assert(shape == (nn_args['fc2_dims'], nn_args['fc1_dims']))
-        if name == 'fc3.weights':
-            assert(shape == (nn_args['output_size'], nn_args['fc2_dims']))
-    
+        if name == 'fc1.weight':
+            assert(shape == (DDPG_FC1_DIMS, nn_args['input_size']))
+        if name == 'fc2.weight':
+            assert(shape == (DDPG_FC2_DIMS, DDPG_FC1_DIMS))
+        if name == 'mu.weight':
+            assert(shape == (nn_args['output_size'], DDPG_FC2_DIMS))
+
     for name, param in networks['target_actor'].named_parameters():
         shape = tuple(param.size())
-        if name == 'fc1.weights':
-            assert(shape == (nn_args['fc1_dims'], nn_args['input_size']))
-        if name == 'fc2.weights':
-            assert(shape == (nn_args['fc2_dims'], nn_args['fc1_dims']))
-        if name == 'fc3.weights':
-            assert(shape == (nn_args['output_size'], nn_args['fc2_dims']))
-    
+        if name == 'fc1.weight':
+            assert(shape == (DDPG_FC1_DIMS, nn_args['input_size']))
+        if name == 'fc2.weight':
+            assert(shape == (DDPG_FC2_DIMS, DDPG_FC1_DIMS))
+        if name == 'mu.weight':
+            assert(shape == (nn_args['output_size'], DDPG_FC2_DIMS))
+
     for name, param in networks['critic'].named_parameters():
         shape = tuple(param.size())
-        if name == 'fc1.weights':
-            assert(shape == (nn_args['fc1_dims'], nn_args['input_size']+nn_args['output_size']))
-        if name == 'fc2.weights':
-            assert(shape == (nn_args['fc2_dims'], nn_args['fc1_dims']))
-        if name == 'fc3.weights':
-            assert(shape == (1, nn_args['fc2_dims']))
-    
+        if name == 'fc1.weight':
+            assert(shape == (DDPG_FC1_DIMS, nn_args['input_size']+nn_args['output_size']))
+        if name == 'fc2.weight':
+            assert(shape == (DDPG_FC2_DIMS, DDPG_FC1_DIMS))
+        if name == 'q.weight':
+            assert(shape == (1, DDPG_FC2_DIMS))
+
     for name, param in networks['target_critic'].named_parameters():
         shape = tuple(param.size())
-        if name == 'fc1.weights':
-            assert(shape == (nn_args['fc1_dims'], nn_args['input_size']+nn_args['output_size']))
-        if name == 'fc2.weights':
-            assert(shape == (nn_args['fc2_dims'], nn_args['fc1_dims']))
-        if name == 'fc3.weights':
-            assert(shape == (1, nn_args['fc2_dims']))
+        if name == 'fc1.weight':
+            assert(shape == (DDPG_FC1_DIMS, nn_args['input_size']+nn_args['output_size']))
+        if name == 'fc2.weight':
+            assert(shape == (DDPG_FC2_DIMS, DDPG_FC1_DIMS))
+        if name == 'q.weight':
+            assert(shape == (1, DDPG_FC2_DIMS))
 
 
 def test_build_networks_TD3():
@@ -144,7 +152,7 @@ def test_build_networks_TD3():
             'network': 'TD3',
             'input_size':32,
             'output_size':2,
-            'meta_param_size':2, 
+            'meta_param_size':2,
             'gsp':False,
             'recurrent_gsp':False,
             'attention': False,
@@ -159,57 +167,57 @@ def test_build_networks_TD3():
     networks = actor.networks
     for name, param in networks['actor'].named_parameters():
         shape = tuple(param.size())
-        if name == 'fc1.weights':
-            assert(shape == (nn_args['fc1_dims'], nn_args['input_size']))
-        if name == 'fc2.weights':
-            assert(shape == (nn_args['fc2_dims'], nn_args['fc1_dims']))
-        if name == 'fc3.weights':
-            assert(shape == (nn_args['output_size'], nn_args['fc2_dims']))
-    
+        if name == 'fc1.weight':
+            assert(shape == (DDPG_FC1_DIMS, nn_args['input_size']))
+        if name == 'fc2.weight':
+            assert(shape == (DDPG_FC2_DIMS, DDPG_FC1_DIMS))
+        if name == 'mu.weight':
+            assert(shape == (nn_args['output_size'], DDPG_FC2_DIMS))
+
     for name, param in networks['target_actor'].named_parameters():
         shape = tuple(param.size())
-        if name == 'fc1.weights':
-            assert(shape == (nn_args['fc1_dims'], nn_args['input_size']))
-        if name == 'fc2.weights':
-            assert(shape == (nn_args['fc2_dims'], nn_args['fc1_dims']))
-        if name == 'fc3.weights':
-            assert(shape == (nn_args['output_size'], nn_args['fc2_dims']))
-    
+        if name == 'fc1.weight':
+            assert(shape == (DDPG_FC1_DIMS, nn_args['input_size']))
+        if name == 'fc2.weight':
+            assert(shape == (DDPG_FC2_DIMS, DDPG_FC1_DIMS))
+        if name == 'mu.weight':
+            assert(shape == (nn_args['output_size'], DDPG_FC2_DIMS))
+
     for name, param in networks['critic_1'].named_parameters():
         shape = tuple(param.size())
-        if name == 'fc1.weights':
-            assert(shape == (nn_args['fc1_dims'], nn_args['input_size']+nn_args['output_size']))
-        if name == 'fc2.weights':
-            assert(shape == (nn_args['fc2_dims'], nn_args['fc1_dims']))
-        if name == 'fc3.weights':
-            assert(shape == (1, nn_args['fc2_dims']))
-    
+        if name == 'fc1.weight':
+            assert(shape == (DDPG_FC1_DIMS, nn_args['input_size']+nn_args['output_size']))
+        if name == 'fc2.weight':
+            assert(shape == (DDPG_FC2_DIMS, DDPG_FC1_DIMS))
+        if name == 'q1.weight':
+            assert(shape == (1, DDPG_FC2_DIMS))
+
     for name, param in networks['target_critic_1'].named_parameters():
         shape = tuple(param.size())
-        if name == 'fc1.weights':
-            assert(shape == (nn_args['fc1_dims'], nn_args['input_size']+nn_args['output_size']))
-        if name == 'fc2.weights':
-            assert(shape == (nn_args['fc2_dims'], nn_args['fc1_dims']))
-        if name == 'fc3.weights':
-            assert(shape == (1, nn_args['fc2_dims']))
+        if name == 'fc1.weight':
+            assert(shape == (DDPG_FC1_DIMS, nn_args['input_size']+nn_args['output_size']))
+        if name == 'fc2.weight':
+            assert(shape == (DDPG_FC2_DIMS, DDPG_FC1_DIMS))
+        if name == 'q1.weight':
+            assert(shape == (1, DDPG_FC2_DIMS))
 
     for name, param in networks['critic_2'].named_parameters():
         shape = tuple(param.size())
-        if name == 'fc1.weights':
-            assert(shape == (nn_args['fc1_dims'], nn_args['input_size']+nn_args['output_size']))
-        if name == 'fc2.weights':
-            assert(shape == (nn_args['fc2_dims'], nn_args['fc1_dims']))
-        if name == 'fc3.weights':
-            assert(shape == (1, nn_args['fc2_dims']))
-    
+        if name == 'fc1.weight':
+            assert(shape == (DDPG_FC1_DIMS, nn_args['input_size']+nn_args['output_size']))
+        if name == 'fc2.weight':
+            assert(shape == (DDPG_FC2_DIMS, DDPG_FC1_DIMS))
+        if name == 'q1.weight':
+            assert(shape == (1, DDPG_FC2_DIMS))
+
     for name, param in networks['target_critic_2'].named_parameters():
         shape = tuple(param.size())
-        if name == 'fc1.weights':
-            assert(shape == (nn_args['fc1_dims'], nn_args['input_size']+nn_args['output_size']))
-        if name == 'fc2.weights':
-            assert(shape == (nn_args['fc2_dims'], nn_args['fc1_dims']))
-        if name == 'fc3.weights':
-            assert(shape == (1, nn_args['fc2_dims']))
+        if name == 'fc1.weight':
+            assert(shape == (DDPG_FC1_DIMS, nn_args['input_size']+nn_args['output_size']))
+        if name == 'fc2.weight':
+            assert(shape == (DDPG_FC2_DIMS, DDPG_FC1_DIMS))
+        if name == 'q1.weight':
+            assert(shape == (1, DDPG_FC2_DIMS))
 
 def test_build_gsp_networks_DDPG():
     nn_args = {
@@ -217,7 +225,7 @@ def test_build_gsp_networks_DDPG():
             'network': 'DQN',
             'input_size':32,
             'output_size':2,
-            'meta_param_size':2, 
+            'meta_param_size':2,
             'gsp':True,
             'recurrent_gsp':False,
             'attention': False,
@@ -232,13 +240,13 @@ def test_build_gsp_networks_DDPG():
     networks = actor.gsp_networks
     for name, param in networks['actor'].named_parameters():
         shape = tuple(param.size())
-        if name == 'mu.weights':
-            assert(shape == nn_args['output_size'])
-        
+        if name == 'mu.weight':
+            assert(shape == (nn_args['gsp_output_size'], DDPG_FC2_DIMS))
+
     for name, param in networks['critic'].named_parameters():
         shape = tuple(param.size())
-        if name == 'q.weights':
-            assert(shape == 1)
+        if name == 'q.weight':
+            assert(shape == (1, DDPG_FC2_DIMS))
 
 def test_build_gsp_networks_Attention():
     nn_args = {
@@ -246,7 +254,7 @@ def test_build_gsp_networks_Attention():
             'network': 'DQN',
             'input_size':32,
             'output_size':2,
-            'meta_param_size':2, 
+            'meta_param_size':2,
             'gsp':True,
             'recurrent_gsp':False,
             'attention': True,
@@ -261,7 +269,5 @@ def test_build_gsp_networks_Attention():
     networks = actor.gsp_networks
     for name, param in networks['attention'].named_parameters():
         shape = tuple(param.size())
-        if name == 'fc_out.weights':
-            assert(shape == nn_args['output_size'])
-
-  
+        if name == 'fc_out.weight':
+            assert(shape[0] == nn_args['gsp_output_size'])

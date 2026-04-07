@@ -164,7 +164,7 @@ def test_make_RDDPG_networks():
         networks = NA.make_RDDPG_networks(lstm_nn_args, ddpg_actor_nn_args, ddpg_critic_nn_args)
         for name, param in networks['actor'].named_parameters():
             shape = param.shape
-            if name == 'ee.embedding.wight':
+            if name == 'ee.embedding.weight':
                 assert(shape[0] == lstm_nn_args['embedding_size'])
                 assert(shape[1] == lstm_nn_args['input_size'])
             elif name == 'ee.meta_layer.weight':
@@ -177,7 +177,7 @@ def test_make_RDDPG_networks():
 
         for name, param in networks['critic'].named_parameters():
             shape = param.shape
-            if name == 'ee.embedding.wight':
+            if name == 'ee.embedding.weight':
                 assert(shape[0] == lstm_nn_args['embedding_size'])
                 assert(shape[1] == lstm_nn_args['input_size'])
             elif name == 'ee.meta_layer.weight':
@@ -252,10 +252,10 @@ def test_make_Environmental_Encoder():
     networks = NA.make_Environmental_Encoder(lstm_nn_args)
     for name, param in networks['ee'].named_parameters():
         shape = param.shape
-        if name == 'ee.embedding.wight':
+        if name == 'embedding.weight':
             assert(shape[0] == lstm_nn_args['embedding_size'])
             assert(shape[1] == lstm_nn_args['input_size'])
-        elif name == 'ee.meta_layer.weight':
+        elif name == 'meta_layer.weight':
             assert(shape[0] == lstm_nn_args['output_size'])
             assert(shape[1] == lstm_nn_args['hidden_size'])
 

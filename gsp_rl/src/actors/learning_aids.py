@@ -323,25 +323,28 @@ class NetworkAids(Hyperparameters):
     def learn_TD3(self, networks, gsp = False):
         states, actions, rewards, states_, dones = self.sample_memory(networks)
 
-        target_actions = networks['target_actor'].forward(states_)
-        target_actions = target_actions + T.clamp(T.tensor(np.random.normal(scale = 0.2)), -0.5, 0.5)
-        target_actions = T.clamp(target_actions, -self.min_max_action, self.min_max_action)
+        with T.no_grad():
+            target_actions = networks['target_actor'].forward(states_)
+            noise = T.clamp(
+                T.tensor(np.random.normal(0, 0.2, size=target_actions.shape).astype(np.float32)),
+                -0.5, 0.5
+            ).to(target_actions.device)
+            target_actions = T.clamp(target_actions + noise, -self.min_max_action, self.min_max_action)
 
-        q1_ = networks['target_critic_1'].forward(states_, target_actions)
-        q2_ = networks['target_critic_2'].forward(states_, target_actions)
+            q1_ = networks['target_critic_1'].forward(states_, target_actions)
+            q2_ = networks['target_critic_2'].forward(states_, target_actions)
 
-        q1 = networks['critic_1'].forward(states, actions).squeeze() # need to squeeze to change shape from [100,1] to [100] to match target shape
+            q1_[dones] = 0.0
+            q2_[dones] = 0.0
+
+            q1_ = q1_.view(-1)
+            q2_ = q2_.view(-1)
+
+            critic_value_ = T.min(q1_, q2_)
+            target = rewards + self.gamma * critic_value_
+
+        q1 = networks['critic_1'].forward(states, actions).squeeze()
         q2 = networks['critic_2'].forward(states, actions).squeeze()
-
-        q1_[dones] = 0.0
-        q2_[dones] = 0.0
-
-        q1_ = q1_.view(-1)
-        q2_ = q2_.view(-1)
-
-        critic_value_ = T.min(q1_, q2_)
-
-        target = rewards + self.gamma*critic_value_
 
         networks['critic_1'].optimizer.zero_grad()
         networks['critic_2'].optimizer.zero_grad()
@@ -358,12 +361,14 @@ class NetworkAids(Hyperparameters):
 
         if networks['learn_step_counter'] % self.update_actor_iter != 0:
             return 0, 0
-        #print('Actor Learn Step')
+
         networks['actor'].optimizer.zero_grad()
         actor_q1_loss = networks['critic_1'].forward(states, networks['actor'].forward(states))
         actor_loss = -T.mean(actor_q1_loss)
         actor_loss.backward()
         networks['actor'].optimizer.step()
+
+        self.update_TD3_network_parameters(self.tau, networks)
 
         return actor_loss.item()
 
