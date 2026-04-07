@@ -11,6 +11,7 @@ import torch as T
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from gsp_rl.src.networks import get_device
 
 
 class SelfAttention(nn.Module):
@@ -187,7 +188,7 @@ class AttentionEncoder(nn.Module):
         # masked_length is the max length of a sequence, so for us it is however long we want our sequences to be when training 
         self.min_max_action = min_max_action
         self.embed_size = embed_size
-        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
+        self.device = get_device()
         self.word_embedding = nn.Sequential(nn.Linear(input_size, hidden_size),
                                             nn.ReLU(),
                                             nn.Linear(hidden_size, 1))

@@ -9,6 +9,7 @@ See Also: docs/modules/networks.md
 import torch as T
 import torch.nn as nn
 import torch.optim as optim
+from gsp_rl.src.networks import get_device
 import numpy as np
 
 
@@ -65,7 +66,7 @@ class DDPGActorNetwork(nn.Module):
         """
         super().__init__()
 
-        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
+        self.device = get_device()
 
         self.min_max_action = min_max_action
         self.lr = lr
@@ -165,7 +166,7 @@ class DDPGCriticNetwork(nn.Module):
         """
         super().__init__()
 
-        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
+        self.device = get_device()
         self.lr = lr
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
