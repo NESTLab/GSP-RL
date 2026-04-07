@@ -31,7 +31,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=gsp_rl --cov-report=term-missing --cov-fail-under=47 -m 'not slow'"
+addopts = "--cov=gsp_rl --cov-report=term-missing --cov-fail-under=65 -m 'not slow'"
 markers = [
     "slow: convergence tests (deselect with '-m \"not slow\"')",
 ]
