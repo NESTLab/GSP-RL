@@ -20,7 +20,7 @@ def test_building_recurrent_actor_network():
     ee = EnvironmentEncoder(**lstm_nn_args)
     for name, param in ee.named_parameters():
         shape = param.shape
-        if name == 'embedding.wight':
+        if name == 'embedding.weight':
             assert(shape[0] == lstm_nn_args['embedding_size'])
             assert(shape[1] == lstm_nn_args['input_size'])
         elif name == 'meta_layer.weight':

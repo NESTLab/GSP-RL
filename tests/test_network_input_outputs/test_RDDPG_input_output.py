@@ -42,7 +42,7 @@ def test_building_recurrent_actor_network():
     rddpg_actor = RDDPGActorNetwork(ee, actor)
     for name, param in rddpg_actor.named_parameters():
         shape = param.shape
-        if name == 'ee.embedding.wight':
+        if name == 'ee.embedding.weight':
             assert(shape[0] == lstm_nn_args['embedding_size'])
             assert(shape[1] == lstm_nn_args['input_size'])
         elif name == 'ee.meta_layer.weight':
@@ -68,7 +68,7 @@ def test_building_critic_network():
     rddpg_critic = RDDPGCriticNetwork(ee, critic)
     for name, param in rddpg_critic.named_parameters():
         shape = param.shape
-        if name == 'ee.embedding.wight':
+        if name == 'ee.embedding.weight':
             assert(shape[0] == lstm_nn_args['embedding_size'])
             assert(shape[1] == lstm_nn_args['input_size'])
         elif name == 'ee.meta_layer.weight':
