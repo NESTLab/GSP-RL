@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "gsp_rl"}]
 
 [tool.poetry.dependencies]
-python = "3.10.2"
+python = "^3.10"
 torch = "^2.1.2"
 numpy = "^1.26.2"
 matplotlib = "^3.8.2"
@@ -28,3 +28,10 @@ pytest = "^7.4.4"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=gsp_rl --cov-report=term-missing --cov-fail-under=47 -m 'not slow'"
+markers = [
+    "slow: convergence tests (deselect with '-m \"not slow\"')",
+]
