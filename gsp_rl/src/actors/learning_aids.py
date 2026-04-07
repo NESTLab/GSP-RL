@@ -175,8 +175,8 @@ class NetworkAids(Hyperparameters):
     def TD3_choose_action(self, observation, networks, n_actions):
         if self.time_step < self.warmup:
             mu = T.tensor(np.random.normal(scale = self.noise,
-                                           size = (n_actions,))
-                          ).to(networks['actor'].device)
+                                           size = (n_actions,)),
+                          dtype=T.float).to(networks['actor'].device)
         else:
             state = T.tensor(observation, dtype = T.float).to(networks['actor'].device)
             mu = networks['actor'].forward(state).to(networks['actor'].device)

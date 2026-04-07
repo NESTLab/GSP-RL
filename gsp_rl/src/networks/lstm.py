@@ -9,6 +9,7 @@ See Also: docs/modules/networks.md
 import torch as T
 import torch.nn as nn
 import torch.optim as optim
+from gsp_rl.src.networks import get_device
 
 
 class EnvironmentEncoder(nn.Module):
@@ -49,7 +50,7 @@ class EnvironmentEncoder(nn.Module):
             lr: Stored but optimizer is created in RDDPG wrapper.
         """
         super().__init__()
-        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
+        self.device = get_device()
 
         self.input_size = input_size
         self.hidden_size = hidden_size

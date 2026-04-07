@@ -12,6 +12,7 @@ import torch as T
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from gsp_rl.src.networks import get_device
 
 
 def fanin_init(size, fanin=None):
@@ -60,7 +61,7 @@ class TD3ActorNetwork(nn.Module):
         self.init_weights(3e-3)
 
         self.optimizer = optim.Adam(self.parameters(), lr = alpha, weight_decay = 1e-4)
-        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
+        self.device = get_device()
 
         self.to(self.device)
 
@@ -142,7 +143,7 @@ class TD3CriticNetwork(nn.Module):
         self.q1 = nn.Linear(self.fc2_dims, 1)
 
         self.optimizer = optim.Adam(self.parameters(), lr = beta, weight_decay = 1e-4)
-        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
+        self.device = get_device()
 
         self.to(self.device)
 

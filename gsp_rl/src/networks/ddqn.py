@@ -10,6 +10,7 @@ import torch as T
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from gsp_rl.src.networks import get_device
 
 
 class DDQN(nn.Module):
@@ -59,7 +60,7 @@ class DDQN(nn.Module):
 
         self.loss = nn.MSELoss()
 
-        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
+        self.device = get_device()
 
         self.to(self.device)
 
