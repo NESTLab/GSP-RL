@@ -107,7 +107,8 @@ class Actor(NetworkAids):
             self.recurrent_gsp_network_input = self.gsp_network_input
 
         self.build_networks(network)
-        if gsp is not None:
+        self.gsp_networks = None
+        if gsp:
             if attention:
                 self.build_gsp_network('attention')
             self.build_gsp_network('DDPG')
