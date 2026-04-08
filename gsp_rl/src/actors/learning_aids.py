@@ -162,6 +162,12 @@ class NetworkAids(Hyperparameters):
         state = T.tensor(observation, dtype = T.float).to(networks['q_eval'].device)
         action_values = networks['q_eval'].forward(state)
         return T.argmax(action_values).item()
+
+    def DQN_DDQN_choose_action_batch(self, observations, networks):
+        """Batched action selection for DQN/DDQN. Returns list of action indices."""
+        states = T.tensor(np.array(observations), dtype=T.float).to(networks['q_eval'].device)
+        action_values = networks['q_eval'].forward(states)
+        return T.argmax(action_values, dim=1).cpu().tolist()
     
     def DDPG_choose_action(self, observation, networks):
         if networks['learning_scheme'] == 'RDDPG':
@@ -172,6 +178,30 @@ class NetworkAids(Hyperparameters):
         return networks['actor'].forward(state).unsqueeze(0)
         
     
+    def DDPG_choose_action_batch(self, observations, networks):
+        """Batched action selection for DDPG. Returns (batch, output_size) numpy array."""
+        if networks['learning_scheme'] == 'RDDPG':
+            # RDDPG uses sequences — cannot batch across robots (stateful LSTM)
+            raise NotImplementedError("RDDPG cannot be batched — use sequential choose_action")
+        states = T.tensor(np.array(observations), dtype=T.float).to(networks['actor'].device)
+        return networks['actor'].forward(states)
+
+    def TD3_choose_action_batch(self, observations, networks, n_actions):
+        """Batched action selection for TD3. Returns list of (1, output_size) numpy arrays."""
+        if self.time_step < self.warmup:
+            batch_size = len(observations)
+            mus = T.tensor(np.random.normal(scale=self.noise, size=(batch_size, n_actions)),
+                           dtype=T.float).to(networks['actor'].device)
+        else:
+            states = T.tensor(np.array(observations), dtype=T.float).to(networks['actor'].device)
+            mus = networks['actor'].forward(states).to(networks['actor'].device)
+        noise = T.tensor(np.random.normal(scale=self.noise, size=mus.shape),
+                         dtype=T.float).to(networks['actor'].device)
+        mus_prime = T.clamp(mus + noise, -networks['actor'].min_max_action,
+                            networks['actor'].min_max_action)
+        self.time_step += 1
+        return mus_prime.cpu().detach().numpy()
+
     def TD3_choose_action(self, observation, networks, n_actions):
         if self.time_step < self.warmup:
             mu = T.tensor(np.random.normal(scale = self.noise,

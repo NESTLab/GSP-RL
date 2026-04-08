@@ -368,6 +368,39 @@ class Actor(NetworkAids):
         else:
             raise Exception('[ERROR]: Learning scheme not recognised for action selection ' + networks['learning_scheme'])
     
+    def choose_actions_batch(self, observations, networks, test=False):
+        """Batched action selection for multiple observations in one forward pass.
+
+        Only supports stateless action networks (DQN, DDQN, DDPG, TD3).
+        Does NOT support RDDPG or attention — those have state/memory concerns.
+
+        Args:
+            observations: list of observation arrays, one per agent.
+            networks: network dict (self.networks).
+            test: if True, greedy (no exploration noise/epsilon).
+
+        Returns:
+            list of actions, one per observation.
+        """
+        if networks['learning_scheme'] in {'DQN', 'DDQN'}:
+            if test or np.random.random() > self.epsilon:
+                return self.DQN_DDQN_choose_action_batch(observations, networks)
+            else:
+                return [np.random.choice(self.action_space) for _ in observations]
+        elif networks['learning_scheme'] == 'DDPG':
+            actions = self.DDPG_choose_action_batch(observations, networks)
+            if not test:
+                actions = actions + T.normal(0.0, self.noise,
+                    size=(len(observations), networks['output_size'])).to(networks['actor'].device)
+            actions = T.clamp(actions, -self.min_max_action, self.min_max_action)
+            return actions.cpu().detach().numpy()
+        elif networks['learning_scheme'] == 'TD3':
+            return self.TD3_choose_action_batch(observations, networks, self.output_size)
+        else:
+            raise NotImplementedError(
+                f"Batched action selection not supported for {networks['learning_scheme']}. "
+                f"Use choose_action() for RDDPG/attention networks.")
+
     def learn(self):
         # TODO Not sure why we have n_agents*batch_size + batch_size
         if self.networks['replay'].mem_ctr < self.batch_size: # (self.n_agents*self.batch_size + self.batch_size): 
