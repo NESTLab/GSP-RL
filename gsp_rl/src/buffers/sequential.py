@@ -29,7 +29,9 @@ class SequenceReplayBuffer:
             max_sequence: int,
             num_observations: int,
             num_actions: int,
-            seq_len: int
+            seq_len: int,
+            hidden_size: int = 0,
+            num_layers: int = 0
     ) -> None:
         """Initialize sequence replay buffer.
 
@@ -38,6 +40,9 @@ class SequenceReplayBuffer:
             num_observations: Observation space dimensionality.
             num_actions: Action space dimensionality.
             seq_len: Length of each sequence.
+            hidden_size: LSTM hidden state size. Set > 0 to enable hidden state
+                storage (R2D2-style). Default 0 disables hidden state storage.
+            num_layers: Number of LSTM layers. Must be > 0 when hidden_size > 0.
         """
         self.mem_size = max_sequence*seq_len
         self.num_observations = num_observations
@@ -45,6 +50,17 @@ class SequenceReplayBuffer:
         self.seq_len = seq_len
         self.mem_ctr = 0
         self.seq_mem_cntr = 0
+
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self._has_hidden = hidden_size > 0 and num_layers > 0
+
+        if self._has_hidden:
+            num_sequences = max_sequence
+            self.h_memory = np.zeros((num_sequences, num_layers, 1, hidden_size), dtype=np.float32)
+            self.c_memory = np.zeros((num_sequences, num_layers, 1, hidden_size), dtype=np.float32)
+            self._pending_h = None
+            self._pending_c = None
 
         #main buffer used for sampling
         self.state_memory = np.zeros((self.mem_size, self.num_observations), dtype = np.float64)
@@ -59,6 +75,19 @@ class SequenceReplayBuffer:
         self.seq_new_state_memory = np.zeros((self.seq_len, self.num_observations), dtype = np.float64)
         self.seq_reward_memory = np.zeros((self.seq_len), dtype = np.float64)
         self.seq_terminal_memory = np.zeros((self.seq_len), dtype = np.bool_)
+
+    def set_sequence_hidden(self, h: np.ndarray, c: np.ndarray) -> None:
+        """Set hidden state for the next sequence to be flushed.
+
+        Call this before the sequence fills up. The stored hidden state
+        represents the LSTM state at the start of the sequence (R2D2-style).
+
+        Args:
+            h: Hidden state array of shape (num_layers, 1, hidden_size).
+            c: Cell state array of shape (num_layers, 1, hidden_size).
+        """
+        self._pending_h = h
+        self._pending_c = c
 
     def store_transition(
             self,
@@ -81,6 +110,13 @@ class SequenceReplayBuffer:
         self.seq_mem_cntr += 1
         
         if self.seq_mem_cntr == self.seq_len:
+            seq_index = (self.mem_ctr // self.seq_len) % (self.mem_size // self.seq_len)
+            # Store hidden state if available
+            if self._has_hidden and self._pending_h is not None:
+                self.h_memory[seq_index] = self._pending_h
+                self.c_memory[seq_index] = self._pending_c
+                self._pending_h = None
+                self._pending_c = None
             #Transfer Seq to main mem and clear seq buffer
             for i in range(self.seq_len):
                 self.state_memory[mem_index+i] = self.seq_state_memory[i]
@@ -122,4 +158,12 @@ class SequenceReplayBuffer:
             a[i] = self.action_memory[j:j+self.seq_len]
             r[i] = self.reward_memory[j:j+self.seq_len]
             d[i] = self.terminal_memory[j:j+self.seq_len]
+        if self._has_hidden:
+            h_batch = np.zeros((batch_size, self.num_layers, 1, self.hidden_size), dtype=np.float32)
+            c_batch = np.zeros((batch_size, self.num_layers, 1, self.hidden_size), dtype=np.float32)
+            for i, j in enumerate(samples_indices):
+                seq_idx = j // self.seq_len
+                h_batch[i] = self.h_memory[seq_idx % (self.mem_size // self.seq_len)]
+                c_batch[i] = self.c_memory[seq_idx % (self.mem_size // self.seq_len)]
+            return s, a, r, s_, d, h_batch, c_batch
         return s, a, r, s_, d
