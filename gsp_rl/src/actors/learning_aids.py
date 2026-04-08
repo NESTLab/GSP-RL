@@ -276,10 +276,8 @@ class NetworkAids(Hyperparameters):
     def learn_RDDPG(self, networks, gsp = False, recurrent = False):
         s, a, r, s_, d = self.sample_memory(networks)
         batch_loss = 0
-        if self.gsp:
-            batch_size = self.gsp_batch_size
-        else:
-            batch_size = self.batch_size
+        # sample_memory always uses self.batch_size, so loop must match
+        batch_size = s.shape[0]
         for batch in range(batch_size):
             states = s[batch]
             actions = a[batch]
