@@ -17,11 +17,13 @@ from gsp_rl.src.networks.lstm import EnvironmentEncoder
 from gsp_rl.src.networks.self_attention import AttentionEncoder
 
 
-def _expected_device():
+def _expected_device(recurrent=False):
     """Return the device that get_device() should detect."""
     if T.cuda.is_available():
         return "cuda"
     elif T.backends.mps.is_available():
+        if recurrent:
+            return "cpu"  # MPS fallback for LSTM/attention
         return "mps"
     else:
         return "cpu"
@@ -43,6 +45,15 @@ class TestGetDevice:
         assert device.type == expected, (
             f"get_device() returned {device}, expected {expected}. "
             f"cuda={T.cuda.is_available()}, mps={T.backends.mps.is_available()}"
+        )
+
+    def test_get_device_recurrent_fallback(self):
+        """Recurrent networks should fall back to CPU on MPS (not on CUDA)."""
+        from gsp_rl.src.networks import get_device
+        device = get_device(recurrent=True)
+        expected = _expected_device(recurrent=True)
+        assert device.type == expected, (
+            f"get_device(recurrent=True) returned {device}, expected {expected}"
         )
 
     def test_get_device_is_consistent(self):
@@ -85,13 +96,13 @@ class TestNetworksUseDetectedDevice:
     def test_lstm_device(self):
         net = EnvironmentEncoder(input_size=5, output_size=1, hidden_size=32,
                                  embedding_size=32, batch_size=8, num_layers=1, lr=0.001)
-        assert net.device.type == _expected_device()
+        assert net.device.type == _expected_device(recurrent=True)
 
     def test_attention_device(self):
         net = AttentionEncoder(input_size=5, output_size=1, min_max_action=1.0,
                                encode_size=16, embed_size=16, hidden_size=16,
                                heads=2, forward_expansion=2, dropout=0.0, max_length=5)
-        assert net.device.type == _expected_device()
+        assert net.device.type == _expected_device(recurrent=True)
 
 
 class TestForwardBackwardOnDevice:

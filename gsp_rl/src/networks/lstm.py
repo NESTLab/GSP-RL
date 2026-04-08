@@ -50,7 +50,7 @@ class EnvironmentEncoder(nn.Module):
             lr: Stored but optimizer is created in RDDPG wrapper.
         """
         super().__init__()
-        self.device = get_device()
+        self.device = get_device(recurrent=True)
 
         self.input_size = input_size
         self.hidden_size = hidden_size

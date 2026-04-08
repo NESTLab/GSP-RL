@@ -188,7 +188,7 @@ class AttentionEncoder(nn.Module):
         # masked_length is the max length of a sequence, so for us it is however long we want our sequences to be when training 
         self.min_max_action = min_max_action
         self.embed_size = embed_size
-        self.device = get_device()
+        self.device = get_device(recurrent=True)
         self.word_embedding = nn.Sequential(nn.Linear(input_size, hidden_size),
                                             nn.ReLU(),
                                             nn.Linear(hidden_size, 1))

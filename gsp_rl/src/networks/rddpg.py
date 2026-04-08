@@ -34,7 +34,10 @@ class RDDPGActorNetwork(nn.Module):
         super().__init__()
         self.ee = environmental_encoder
         self.actor = ddpg_actor
+        # Use encoder's device (CPU on MPS due to LSTM fallback, GPU on CUDA)
         self.device = self.ee.device
+        self.actor.to(self.device)
+        self.actor.device = self.device
         self.optimizer = optim.Adam(self.parameters(), lr = ddpg_actor.lr, weight_decay = 1e-4)
 
     def forward(self, x: T.Tensor) -> T.Tensor:
@@ -76,7 +79,10 @@ class RDDPGCriticNetwork(nn.Module):
         super().__init__()
         self.ee = environmental_encoder
         self.critic = ddpg_critic
+        # Use encoder's device (CPU on MPS due to LSTM fallback, GPU on CUDA)
         self.device = self.ee.device
+        self.critic.to(self.device)
+        self.critic.device = self.device
         self.optimizer = optim.Adam(self.parameters(), lr = ddpg_critic.lr, weight_decay = 1e-4)
     
     def forward(self, state: T.Tensor, action: T.Tensor) -> T.Tensor:
