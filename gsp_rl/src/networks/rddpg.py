@@ -34,7 +34,7 @@ class RDDPGActorNetwork(nn.Module):
         super().__init__()
         self.ee = environmental_encoder
         self.actor = ddpg_actor
-        # Use encoder's device (CPU on MPS due to LSTM fallback, GPU on CUDA)
+        # Use encoder's device — ensures all components on same device
         self.device = self.ee.device
         self.actor.to(self.device)
         self.actor.device = self.device
@@ -83,7 +83,7 @@ class RDDPGCriticNetwork(nn.Module):
         super().__init__()
         self.ee = environmental_encoder
         self.critic = ddpg_critic
-        # Use encoder's device (CPU on MPS due to LSTM fallback, GPU on CUDA)
+        # Use encoder's device — ensures all components on same device
         self.device = self.ee.device
         self.critic.to(self.device)
         self.critic.device = self.device

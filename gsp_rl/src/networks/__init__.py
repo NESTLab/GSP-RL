@@ -6,16 +6,13 @@ def get_device(recurrent: bool = False) -> T.device:
     """Auto-detect the best available device: cuda > mps > cpu.
 
     Args:
-        recurrent: If True, indicates the network uses LSTM or attention.
-                   On macOS MPS, these fall back to CPU due to PyTorch MPS
-                   backend bugs with repeated LSTM backward passes.
-                   On CUDA (Linux/Windows), recurrent networks use GPU normally.
+        recurrent: Previously used to force CPU fallback for LSTM/attention on MPS.
+                   No longer needed — vectorized RDDPG works on MPS.
+                   Kept for API compatibility but ignored.
     """
     if T.cuda.is_available():
         return T.device("cuda:0")
     elif T.backends.mps.is_available():
-        if recurrent:
-            return T.device("cpu")
         return T.device("mps")
     else:
         return T.device("cpu")

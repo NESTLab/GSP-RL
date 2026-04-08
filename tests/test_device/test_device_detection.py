@@ -22,9 +22,7 @@ def _expected_device(recurrent=False):
     if T.cuda.is_available():
         return "cuda"
     elif T.backends.mps.is_available():
-        if recurrent:
-            return "cpu"  # MPS fallback for LSTM/attention
-        return "mps"
+        return "mps"  # MPS works for all networks including LSTM (vectorized)
     else:
         return "cpu"
 
