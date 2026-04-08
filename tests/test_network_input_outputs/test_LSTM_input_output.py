@@ -32,4 +32,5 @@ def test_actor_forward():
     ee = EnvironmentEncoder(**lstm_nn_args)
     testing_data = [T.randn((lstm_nn_args['input_size'])) for _ in range(10)]
     testing_data = T.tensor(np.array(testing_data)).to(ee.device)
-    assert(ee(testing_data).shape[-1] == lstm_nn_args['output_size'])
+    output, _ = ee(testing_data)
+    assert(output.shape[-1] == lstm_nn_args['output_size'])

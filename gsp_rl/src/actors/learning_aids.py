@@ -173,9 +173,11 @@ class NetworkAids(Hyperparameters):
         if networks['learning_scheme'] == 'RDDPG':
             # if using LSTM we need to add an extra dimension
             state = T.tensor(np.array(observation), dtype=T.float).to(networks['actor'].device)
+            mu, _ = networks['actor'].forward(state)
+            return mu.unsqueeze(0)
         else:
             state = T.tensor(observation, dtype = T.float).to(networks['actor'].device)
-        return networks['actor'].forward(state).unsqueeze(0)
+            return networks['actor'].forward(state).unsqueeze(0)
         
     
     def DDPG_choose_action_batch(self, observations, networks):
@@ -318,8 +320,8 @@ class NetworkAids(Hyperparameters):
                 actions = actions.unsqueeze(1)
             elif recurrent:
                 actions = actions.view(actions.shape[0], 1, actions.shape[1])
-            target_actions = networks['target_actor'](states_)
-            q_value_ = networks['target_critic'](states_, target_actions)
+            target_actions, _ = networks['target_actor'](states_)
+            q_value_, _ = networks['target_critic'](states_, target_actions)
             # print('[REWARDS]', rewards.shape, T.unsqueeze(rewards, 1).shape)
             # print('[Q_VALUE_]', q_value_.shape, T.squeeze(T.squeeze(q_value_, -1), -1).shape)
             target = T.unsqueeze(rewards, 1) + self.gamma*T.squeeze(q_value_, -1)
@@ -327,7 +329,7 @@ class NetworkAids(Hyperparameters):
 
             #Critic Update
             networks['critic'].optimizer.zero_grad()
-            q_value = networks['critic'](states, actions)
+            q_value, _ = networks['critic'](states, actions)
             # print('[Q_VALUE]', q_value.shape)
             # print('[TARGET]', target.shape)
             value_loss = Loss(T.squeeze(q_value, -1), target)
@@ -337,8 +339,9 @@ class NetworkAids(Hyperparameters):
             #Actor Update
             networks['actor'].optimizer.zero_grad()
 
-            new_policy_actions = networks['actor'](states)
-            actor_loss = -networks['critic'](states, new_policy_actions)
+            new_policy_actions, _ = networks['actor'](states)
+            actor_loss_val, _ = networks['critic'](states, new_policy_actions)
+            actor_loss = -actor_loss_val
             actor_loss = actor_loss.mean()
             actor_loss.backward()
             batch_loss += actor_loss.item()

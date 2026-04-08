@@ -60,7 +60,7 @@ def test_actor_forward():
     actor = DDPGActorNetwork(**ddpg_actor_nn_args)
     rddpg_actor = RDDPGActorNetwork(ee, actor)
     random_observation = T.rand((lstm_nn_args['batch_size'], lstm_nn_args['input_size'])).to(rddpg_actor.device)
-    output = rddpg_actor(random_observation)
+    output, _ = rddpg_actor(random_observation)
     assert(output.shape[-1] == ddpg_actor_nn_args['output_size'])
 
 def test_building_critic_network():
@@ -87,6 +87,6 @@ def test_critic_forward():
     rddpg_actor = RDDPGActorNetwork(ee, actor)
     rddpg_critic = RDDPGCriticNetwork(ee, critic)
     random_observation = T.rand((lstm_nn_args['batch_size'], lstm_nn_args['input_size'])).to(rddpg_critic.device)
-    action = rddpg_actor(random_observation)
-    value = rddpg_critic(random_observation, action)
+    action, _ = rddpg_actor(random_observation)
+    value, _ = rddpg_critic(random_observation, action)
     assert(value.shape[-1] == 1)

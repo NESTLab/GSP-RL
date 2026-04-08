@@ -72,23 +72,43 @@ class EnvironmentEncoder(nn.Module):
         self.name = "Enviroment_Encoder"
         self.to(self.device)
 
-    def forward(
-            self,
-            observation: T.Tensor,
-    ) -> T.Tensor:
-        """Encode an observation (or sequence) through embedding + LSTM + projection.
+    def forward(self, observation, hidden=None):
+        """Encode observation through embedding + LSTM + projection.
 
         Args:
-            observation: Tensor of shape (seq_len, input_size) or (batch, input_size).
+            observation: Tensor of shape (seq_len, input_size) for single sample,
+                         or (batch, seq_len, input_size) for batched input.
+            hidden: Optional (h_0, c_0) tuple. If None, LSTM uses zeros.
+                    Shape: (num_layers, batch, hidden_size) for each.
 
         Returns:
-            Encoding tensor of shape (seq_len, 1, output_size). The middle dim=1
-            comes from the view reshape before LSTM.
+            Tuple of (output, (h_n, c_n)):
+                output: Shape (seq_len, output_size) for single,
+                        or (batch, seq_len, output_size) for batched.
+                (h_n, c_n): Final hidden state.
         """
-        embed = self.embedding(observation)
-        lstm_out, _ = self.ee(embed.view(embed.shape[0], 1, -1))
-        out = self.meta_layer(lstm_out)
-        return out
+        # Handle single vs batched input
+        if observation.dim() == 2:
+            # Single sample: (seq_len, input) -> add batch dim
+            observation = observation.unsqueeze(0)
+            squeeze_batch = True
+        else:
+            squeeze_batch = False
+
+        # observation is now (batch, seq_len, input_size)
+        embed = self.embedding(observation)  # (batch, seq_len, embed_size)
+
+        if hidden is not None:
+            lstm_out, (h_n, c_n) = self.ee(embed, hidden)
+        else:
+            lstm_out, (h_n, c_n) = self.ee(embed)
+
+        out = self.meta_layer(lstm_out)  # (batch, seq_len, output_size)
+
+        if squeeze_batch:
+            out = out.squeeze(0)  # back to (seq_len, output_size)
+
+        return out, (h_n, c_n)
 
     def save_checkpoint(self, path: str, intention: bool = False) -> None:
         """ Save Model """
