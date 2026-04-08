@@ -251,7 +251,7 @@ class Actor(NetworkAids):
                     self.gsp_networks['learning_scheme'] = 'RDDPG'
                     self.gsp_networks['output_size'] = self.gsp_network_output
                     #self.gsp_networks['replay'] = ReplayBuffer(self.mem_size, self.gsp_network_input, 1, 'Continuous', use_gsp = True)
-                    self.gsp_networks['replay'] = SequenceReplayBuffer(self.mem_size, self.gsp_network_input, self.gsp_network_output, self.gsp_sequence_length)
+                    self.gsp_networks['replay'] = SequenceReplayBuffer(self.mem_size, self.gsp_network_input, self.gsp_network_output, self.gsp_sequence_length, hidden_size=self.recurrent_hidden_size, num_layers=self.recurrent_num_layers)
                     #SequenceReplayBuffer(max_sequence=100, num_observations = self.gsp_network_input, num_actions = 1, seq_len = 5)
                     self.gsp_networks['learn_step_counter'] = 0
                 else:
