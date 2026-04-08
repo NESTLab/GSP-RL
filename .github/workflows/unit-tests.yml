@@ -34,8 +34,8 @@ jobs:
 
       - name: Run Tier 1 tests (fast, no convergence)
         run: |
-          poetry run pytest tests/ -v --tb=short
+          poetry run pytest tests/ -v --tb=short --override-ini="addopts=-m 'not slow'"
 
       - name: Check coverage
         run: |
-          poetry run pytest tests/ --cov=gsp_rl --cov-report=term-missing --cov-fail-under=65
+          poetry run pytest tests/ -m 'not slow' --cov=gsp_rl --cov-report=term-missing --cov-fail-under=65 --override-ini="addopts="
