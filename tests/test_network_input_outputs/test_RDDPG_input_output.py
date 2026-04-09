@@ -60,7 +60,8 @@ def test_actor_forward():
     rddpg_actor = RDDPGActorNetwork(ee, actor)
     testing_data = [T.randn((lstm_nn_args['input_size'])) for _ in range(10)]
     testing_data = T.tensor(np.array(testing_data)).to(rddpg_actor.device)
-    assert(rddpg_actor(testing_data).shape[-1] == ddpg_actor_nn_args['output_size'])
+    output, _ = rddpg_actor(testing_data)
+    assert(output.shape[-1] == ddpg_actor_nn_args['output_size'])
 
 def test_building_critic_network():
     ee = EnvironmentEncoder(**lstm_nn_args)
@@ -87,7 +88,7 @@ def test_critic_forward():
     rddpg_critic = RDDPGCriticNetwork(ee, critic)
     testing_data = [T.randn((lstm_nn_args['input_size'])) for _ in range(10)]
     testing_data = T.tensor(np.array(testing_data)).to(rddpg_critic.device)
-    action = rddpg_actor(testing_data)
-    value = rddpg_critic(testing_data, action)
+    action, _ = rddpg_actor(testing_data)
+    value, _ = rddpg_critic(testing_data, action)
     assert(value.shape[-1] == 1)
     

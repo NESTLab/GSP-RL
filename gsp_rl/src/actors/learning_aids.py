@@ -173,9 +173,11 @@ class NetworkAids(Hyperparameters):
         if networks['learning_scheme'] == 'RDDPG':
             # if using LSTM we need to add an extra dimension
             state = T.tensor(np.array(observation), dtype=T.float).to(networks['actor'].device)
+            mu, _ = networks['actor'].forward(state)
+            return mu.unsqueeze(0)
         else:
             state = T.tensor(observation, dtype = T.float).to(networks['actor'].device)
-        return networks['actor'].forward(state).unsqueeze(0)
+            return networks['actor'].forward(state).unsqueeze(0)
         
     
     def DDPG_choose_action_batch(self, observations, networks):
@@ -304,49 +306,84 @@ class NetworkAids(Hyperparameters):
         return actor_loss.item()
     
     def learn_RDDPG(self, networks, gsp = False, recurrent = False):
-        s, a, r, s_, d = self.sample_memory(networks)
-        batch_loss = 0
-        # sample_memory always uses self.batch_size, so loop must match
-        batch_size = s.shape[0]
-        for batch in range(batch_size):
-            states = s[batch]
-            actions = a[batch]
-            rewards = r[batch]
-            states_ = s_[batch]
-            dones = d[batch]
-            if not recurrent:
-                actions = actions.unsqueeze(1)
-            elif recurrent:
-                actions = actions.view(actions.shape[0], 1, actions.shape[1])
-            target_actions = networks['target_actor'](states_)
-            q_value_ = networks['target_critic'](states_, target_actions)
-            # print('[REWARDS]', rewards.shape, T.unsqueeze(rewards, 1).shape)
-            # print('[Q_VALUE_]', q_value_.shape, T.squeeze(T.squeeze(q_value_, -1), -1).shape)
-            target = T.unsqueeze(rewards, 1) + self.gamma*T.squeeze(q_value_, -1)
-            # print(target.shape)
+        mem_result = self.sample_memory(networks)
+        if len(mem_result) == 7:
+            states, actions, rewards, states_, dones, h_batch, c_batch = mem_result
+            device = networks['actor'].device
+            h_0 = T.tensor(np.array(h_batch), dtype=T.float32).to(device)
+            c_0 = T.tensor(np.array(c_batch), dtype=T.float32).to(device)
+            # h_batch shape: (batch, num_layers, 1, hidden) -> (num_layers, batch, hidden)
+            h_0 = h_0.squeeze(2).permute(1, 0, 2).contiguous()
+            c_0 = c_0.squeeze(2).permute(1, 0, 2).contiguous()
+            hidden_init = (h_0, c_0)
+        else:
+            states, actions, rewards, states_, dones = mem_result
+            hidden_init = None
 
-            #Critic Update
-            networks['critic'].optimizer.zero_grad()
-            q_value = networks['critic'](states, actions)
-            # print('[Q_VALUE]', q_value.shape)
-            # print('[TARGET]', target.shape)
-            value_loss = Loss(T.squeeze(q_value, -1), target)
-            value_loss.backward()
-            networks['critic'].optimizer.step()
+        # states: (batch, seq_len, obs_dim)
+        # actions: (batch, seq_len, act_dim)
+        seq_len = states.shape[1]
+        burn_in_len = seq_len // 2
+        train_len = seq_len - burn_in_len
 
-            #Actor Update
-            networks['actor'].optimizer.zero_grad()
+        # Split into burn-in and training portions
+        burn_states = states[:, :burn_in_len, :]
+        train_states = states[:, burn_in_len:, :]
+        burn_states_ = states_[:, :burn_in_len, :]
+        train_states_ = states_[:, burn_in_len:, :]
+        train_actions = actions[:, burn_in_len:, :]
+        train_rewards = rewards[:, burn_in_len:]
 
-            new_policy_actions = networks['actor'](states)
-            actor_loss = -networks['critic'](states, new_policy_actions)
-            actor_loss = actor_loss.mean()
-            actor_loss.backward()
-            batch_loss += actor_loss.item()
-            networks['actor'].optimizer.step()
+        # Burn-in: refresh hidden state without gradients
+        with T.no_grad():
+            if burn_in_len > 0:
+                # Run burn-in through actor encoder to get hidden state
+                _, actor_hidden = networks['actor'].ee(burn_states, hidden=hidden_init)
+                _, critic_hidden = networks['critic'].ee(burn_states, hidden=hidden_init)
+                _, target_actor_hidden = networks['target_actor'].ee(burn_states_, hidden=hidden_init)
+                _, target_critic_hidden = networks['target_critic'].ee(burn_states_, hidden=hidden_init)
+            else:
+                actor_hidden = hidden_init
+                critic_hidden = hidden_init
+                target_actor_hidden = hidden_init
+                target_critic_hidden = hidden_init
 
-            networks['learn_step_counter'] += 1
+        # Detach hidden states so burn-in gradients don't flow
+        if actor_hidden is not None:
+            actor_hidden = (actor_hidden[0].detach(), actor_hidden[1].detach())
+            critic_hidden = (critic_hidden[0].detach(), critic_hidden[1].detach())
+            target_actor_hidden = (target_actor_hidden[0].detach(), target_actor_hidden[1].detach())
+            target_critic_hidden = (target_critic_hidden[0].detach(), target_critic_hidden[1].detach())
 
-        return batch_loss
+        # Target computation (no gradients)
+        with T.no_grad():
+            target_actions, _ = networks['target_actor'](train_states_, hidden=target_actor_hidden)
+            q_value_, _ = networks['target_critic'](train_states_, target_actions, hidden=target_critic_hidden)
+            # Use last timestep for Bellman target
+            q_last_ = q_value_[:, -1, :]  # (batch, 1)
+            r_last = train_rewards[:, -1]  # (batch,)
+            target = r_last.unsqueeze(1) + self.gamma * q_last_  # (batch, 1)
+
+        # Critic update
+        networks['critic'].optimizer.zero_grad()
+        q_value, _ = networks['critic'](train_states, train_actions, hidden=critic_hidden)
+        q_last = q_value[:, -1, :]  # (batch, 1)
+        value_loss = Loss(q_last, target)
+        value_loss.backward()
+        networks['critic'].optimizer.step()
+
+        # Actor update
+        networks['actor'].optimizer.zero_grad()
+        new_policy_actions, _ = networks['actor'](train_states, hidden=actor_hidden)
+        # Re-run critic with fresh hidden (detached) for actor loss
+        actor_q_val, _ = networks['critic'](train_states, new_policy_actions, hidden=critic_hidden)
+        actor_loss = -actor_q_val[:, -1, :].mean()
+        actor_loss.backward()
+        networks['actor'].optimizer.step()
+
+        networks['learn_step_counter'] += 1
+
+        return actor_loss.item()
 
     def learn_TD3(self, networks, gsp = False):
         states, actions, rewards, states_, dones = self.sample_memory(networks)
@@ -422,18 +459,28 @@ class NetworkAids(Hyperparameters):
         networks['replay'].store_transition(s, y)
 
     def sample_memory(self, networks):
-        states, actions, rewards, states_, dones = networks['replay'].sample_buffer(self.batch_size)
+        result = networks['replay'].sample_buffer(self.batch_size)
         if networks['learning_scheme'] in {'DQN', 'DDQN'}:
             device = networks['q_eval'].device
         elif networks['learning_scheme'] in {'DDPG', 'RDDPG', 'TD3'}:
             device = networks['actor'].device
-        states = T.tensor(states, dtype=T.float32).to(device)
-        actions = T.tensor(actions, dtype=T.float32).to(device)
-        rewards = T.tensor(rewards, dtype=T.float32).to(device)
-        states_ = T.tensor(states_, dtype=T.float32).to(device)
-        dones = T.tensor(dones).to(device)
 
-        return states, actions, rewards, states_, dones
+        if len(result) == 7:
+            states, actions, rewards, states_, dones, h_batch, c_batch = result
+            states = T.tensor(states, dtype=T.float32).to(device)
+            actions = T.tensor(actions, dtype=T.float32).to(device)
+            rewards = T.tensor(rewards, dtype=T.float32).to(device)
+            states_ = T.tensor(states_, dtype=T.float32).to(device)
+            dones = T.tensor(dones).to(device)
+            return states, actions, rewards, states_, dones, h_batch, c_batch
+        else:
+            states, actions, rewards, states_, dones = result
+            states = T.tensor(states, dtype=T.float32).to(device)
+            actions = T.tensor(actions, dtype=T.float32).to(device)
+            rewards = T.tensor(rewards, dtype=T.float32).to(device)
+            states_ = T.tensor(states_, dtype=T.float32).to(device)
+            dones = T.tensor(dones).to(device)
+            return states, actions, rewards, states_, dones
 
     def sample_attention_memory(self, networks):
         observations, labels = networks['replay'].sample_buffer(self.batch_size)
