@@ -29,6 +29,20 @@ import torch.nn.functional as F
 import torch.optim as Adam
 
 import numpy as np
+import logging
+
+_learn_logger = logging.getLogger("stelaris.learn")
+
+
+def _check_nan(value, name):
+    """Raise RuntimeError if value is NaN or Inf. Works with floats and tensors."""
+    if isinstance(value, T.Tensor):
+        if T.isnan(value).any() or T.isinf(value).any():
+            raise RuntimeError(f"NaN detected in {name}: {value}")
+    else:
+        if not np.isfinite(value):
+            raise RuntimeError(f"NaN detected in {name}: {value}")
+
 
 Loss = nn.MSELoss()
 
@@ -238,6 +252,7 @@ class NetworkAids(Hyperparameters):
 
         loss = networks['q_eval'].loss(q_target, q_pred).to(networks['q_eval'].device)
         loss.backward()
+        _check_nan(loss, f"DQN loss at step {networks['learn_step_counter']}")
 
         networks['q_eval'].optimizer.step()
         networks['learn_step_counter'] += 1
@@ -268,6 +283,7 @@ class NetworkAids(Hyperparameters):
         loss = networks['q_eval'].loss(q_target, q_pred).to(networks['q_eval'].device)
 
         loss.backward()
+        _check_nan(loss, f"DDQN loss at step {networks['learn_step_counter']}")
         
         networks['q_eval'].optimizer.step()
 
@@ -290,6 +306,7 @@ class NetworkAids(Hyperparameters):
         q_value = networks['critic'](states, actions)
         value_loss = Loss(q_value, target)
         value_loss.backward()
+        _check_nan(value_loss, f"DDPG critic loss at step {networks['learn_step_counter']}")
         networks['critic'].optimizer.step()
 
         #Actor Update
@@ -299,6 +316,7 @@ class NetworkAids(Hyperparameters):
         actor_loss = -networks['critic'](states, new_policy_actions)
         actor_loss = actor_loss.mean()
         actor_loss.backward()
+        _check_nan(actor_loss, f"DDPG actor loss at step {networks['learn_step_counter']}")
         networks['actor'].optimizer.step()
 
         networks['learn_step_counter'] += 1
@@ -370,6 +388,7 @@ class NetworkAids(Hyperparameters):
         q_last = q_value[:, -1, :]  # (batch, 1)
         value_loss = Loss(q_last, target)
         value_loss.backward()
+        _check_nan(value_loss, f"RDDPG critic loss at step {networks['learn_step_counter']}")
         networks['critic'].optimizer.step()
 
         # Actor update
@@ -379,6 +398,7 @@ class NetworkAids(Hyperparameters):
         actor_q_val, _ = networks['critic'](train_states, new_policy_actions, hidden=critic_hidden)
         actor_loss = -actor_q_val[:, -1, :].mean()
         actor_loss.backward()
+        _check_nan(actor_loss, f"RDDPG actor loss at step {networks['learn_step_counter']}")
         networks['actor'].optimizer.step()
 
         networks['learn_step_counter'] += 1
@@ -419,6 +439,7 @@ class NetworkAids(Hyperparameters):
         critic_loss = q1_loss + q2_loss
 
         critic_loss.backward()
+        _check_nan(critic_loss, f"TD3 critic loss at step {networks['learn_step_counter']}")
         networks['critic_1'].optimizer.step()
         networks['critic_2'].optimizer.step()
 
@@ -431,6 +452,7 @@ class NetworkAids(Hyperparameters):
         actor_q1_loss = networks['critic_1'].forward(states, networks['actor'].forward(states))
         actor_loss = -T.mean(actor_q1_loss)
         actor_loss.backward()
+        _check_nan(actor_loss, f"TD3 actor loss at step {networks['learn_step_counter']}")
         networks['actor'].optimizer.step()
 
         self.update_TD3_network_parameters(self.tau, networks)
@@ -446,6 +468,7 @@ class NetworkAids(Hyperparameters):
         pred_headings = networks['attention'](observations)
         loss = Loss(pred_headings, labels.unsqueeze(-1))
         loss.backward()
+        _check_nan(loss, f"Attention loss at step {networks['learn_step_counter']}")
         networks['attention'].optimizer.step()
         return loss.item()
         
