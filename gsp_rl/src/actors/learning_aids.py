@@ -468,6 +468,7 @@ class NetworkAids(Hyperparameters):
         pred_headings = networks['attention'](observations)
         loss = Loss(pred_headings, labels.unsqueeze(-1))
         loss.backward()
+        _check_nan(loss, f"Attention loss at step {networks['learn_step_counter']}")
         networks['attention'].optimizer.step()
         return loss.item()
         
