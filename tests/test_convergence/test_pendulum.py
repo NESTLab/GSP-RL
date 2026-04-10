@@ -74,18 +74,20 @@ def _train_pendulum(scheme, max_episodes=100):
 
 @pytest.mark.slow
 class TestPendulumConvergence:
-    def test_ddpg_improves_over_random(self):
+    def test_ddpg_improves_over_random(self, convergence_plots):
         random_baseline = _random_baseline()
         rewards = _train_pendulum("DDPG", max_episodes=100)
+        convergence_plots["DDPG_Pendulum"] = rewards
         avg_last_20 = np.mean(rewards[-20:])
         improvement = (avg_last_20 - random_baseline) / abs(random_baseline)
         assert improvement > 0.2, (
             f"DDPG failed: avg last 20 = {avg_last_20:.1f}, random = {random_baseline:.1f}, "
             f"improvement = {improvement:.1%}")
 
-    def test_td3_improves_over_random(self):
+    def test_td3_improves_over_random(self, convergence_plots):
         random_baseline = _random_baseline()
         rewards = _train_pendulum("TD3", max_episodes=100)
+        convergence_plots["TD3_Pendulum"] = rewards
         avg_last_20 = np.mean(rewards[-20:])
         improvement = (avg_last_20 - random_baseline) / abs(random_baseline)
         assert improvement > 0.2, (

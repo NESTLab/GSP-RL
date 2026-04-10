@@ -31,3 +31,11 @@ jobs:
       - name: Run convergence tests
         run: |
           poetry run pytest tests/test_convergence/ -m slow -v --override-ini="addopts=" --tb=short
+
+      - name: Upload learning curves
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: convergence-plots
+          path: convergence_plots/
+          retention-days: 30

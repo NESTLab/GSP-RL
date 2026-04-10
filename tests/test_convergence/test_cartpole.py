@@ -54,12 +54,14 @@ def _train_cartpole(scheme, max_episodes=150):
 
 @pytest.mark.slow
 class TestCartPoleConvergence:
-    def test_dqn_solves_cartpole(self):
+    def test_dqn_solves_cartpole(self, convergence_plots):
         rewards = _train_cartpole("DQN", max_episodes=150)
+        convergence_plots["DQN_CartPole"] = rewards
         avg_last_20 = np.mean(rewards[-20:])
         assert avg_last_20 > 200, f"DQN failed: avg last 20 = {avg_last_20:.1f} (need > 200)"
 
-    def test_ddqn_solves_cartpole(self):
+    def test_ddqn_solves_cartpole(self, convergence_plots):
         rewards = _train_cartpole("DDQN", max_episodes=150)
+        convergence_plots["DDQN_CartPole"] = rewards
         avg_last_20 = np.mean(rewards[-20:])
         assert avg_last_20 > 200, f"DDQN failed: avg last 20 = {avg_last_20:.1f} (need > 200)"
