@@ -1,7 +1,15 @@
 import numpy as np
 import pytest
+import torch
 import gymnasium as gym
 from gsp_rl.src.actors.actor import Actor
+
+SEED = 42
+
+
+def _seed_all(seed):
+    torch.manual_seed(seed)
+    np.random.seed(seed)
 
 
 def _make_config():
@@ -15,6 +23,7 @@ def _make_config():
 
 
 def _train_cartpole(scheme, max_episodes=150):
+    _seed_all(SEED)
     config = _make_config()
     env = gym.make("CartPole-v1")
     obs_size = env.observation_space.shape[0]  # 4
@@ -26,7 +35,7 @@ def _train_cartpole(scheme, max_episodes=150):
 
     episode_rewards = []
     for ep in range(max_episodes):
-        obs, _ = env.reset()
+        obs, _ = env.reset(seed=SEED + ep)
         total_reward = 0
         done = False
         while not done:
