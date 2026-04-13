@@ -405,7 +405,7 @@ class NetworkAids(Hyperparameters):
 
         return actor_loss.item()
 
-    def learn_TD3(self, networks, gsp = False):
+    def learn_TD3(self, networks, gsp = False, recurrent = False):
         states, actions, rewards, states_, dones = self.sample_memory(networks)
 
         with T.no_grad():

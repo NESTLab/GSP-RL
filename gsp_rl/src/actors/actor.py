@@ -113,7 +113,16 @@ class Actor(NetworkAids):
                 self.build_gsp_network('attention')
             self.build_gsp_network('DDPG')
 
-        # Information-collapse diagnostic: last GSP prediction network training loss.
+        # Information-collapse diagnostic: last GSP learner training loss.
+        # NOTE: this is the loss returned by the GSP learner's inner learn step, which means:
+        #   - For DDPG/RDDPG/TD3 GSP schemes: actor loss (a critic-derived policy-gradient
+        #     signal), NOT the prediction MSE against delta-theta. A collapsed predictor may
+        #     not produce an anomalous value here, since the critic's value landscape can
+        #     support multiple policy solutions.
+        #   - For the attention GSP scheme: genuine prediction MSE against the label.
+        # For prediction-collapse detection, prefer the raw per-step squared error captured
+        # in RL-CollectiveTransport as `gsp_squared_error` plus the episode-level
+        # `gsp_output_std` / `gsp_pred_target_corr` attrs computed in the Stelaris HDF5Logger.
         # Populated by learn_gsp() whenever a GSP learning step fires; reset to None at the
         # start of each learn() call so callers can distinguish "no GSP step this tick" from
         # "GSP step ran".
@@ -452,9 +461,12 @@ class Actor(NetworkAids):
         elif self.gsp_networks['learning_scheme'] == 'attention':
             loss = self.learn_attention(self.gsp_networks)
         if loss is not None:
-            # TD3's edge-case path returns (0, 0); normalize to a scalar for logging.
+            # TD3's non-actor-update steps return (0, 0) (critic stepped, actor did not).
+            # Recording a legitimate 0.0 there would produce false collapse signals every
+            # `update_actor_iter - 1` ticks, so skip those entries entirely — leave
+            # last_gsp_loss at None as if no GSP step ran this tick.
             if isinstance(loss, tuple):
-                loss = loss[0]
+                return
             self.last_gsp_loss = float(loss)
 
     def store_agent_transition(self, s, a, r, s_, d):
