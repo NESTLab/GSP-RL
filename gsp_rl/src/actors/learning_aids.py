@@ -471,7 +471,58 @@ class NetworkAids(Hyperparameters):
         _check_nan(loss, f"Attention loss at step {networks['learn_step_counter']}")
         networks['attention'].optimizer.step()
         return loss.item()
-        
+
+    def learn_gsp_mse(self, networks, recurrent: bool = False):
+        """Train the GSP prediction network via direct supervised MSE.
+
+        Replaces the DDPG/RDDPG actor-critic path for non-attention GSP variants.
+        Samples (state, label) pairs from `networks['replay']`, forwards the state
+        through the actor network, and minimizes MSE against the label. The label
+        is stored in the action field of the replay buffer by convention — see
+        RL-CollectiveTransport Main.py's store_gsp_transition call sites.
+
+        Rationale: see docs/research/2026-04-13-gsp-information-collapse-analysis.md
+        in the Stelaris repo. Training the GSP predictor as a DDPG actor-critic
+        on a clipped negative-MSE reward produced an information-collapsed
+        predictor whose output was worse than predicting the constant mean.
+        Direct supervised MSE has a non-vanishing gradient `2(pred-label)` that
+        drives the predictor toward the label regardless of how flat the reward
+        landscape is.
+        """
+        if networks['replay'].mem_ctr < self.gsp_batch_size:
+            return None
+
+        if recurrent:
+            mem_result = self.sample_memory(networks)
+            if len(mem_result) == 7:
+                states, labels, _, _, _, _, _ = mem_result
+            else:
+                states, labels, _, _, _ = mem_result
+            networks['actor'].optimizer.zero_grad()
+            preds_out = networks['actor'](states, hidden=None)
+            preds = preds_out[0] if isinstance(preds_out, tuple) else preds_out
+            if preds.dim() == labels.dim() + 1:
+                labels_shaped = labels.unsqueeze(-1)
+            else:
+                labels_shaped = labels.view_as(preds)
+            loss = F.mse_loss(preds, labels_shaped)
+        else:
+            states, labels, _, _, _ = self.sample_memory(networks)
+            networks['actor'].optimizer.zero_grad()
+            preds = networks['actor'].forward(states)
+            # labels shape: (batch,) or (batch, 1). preds shape: (batch, 1).
+            if labels.dim() == preds.dim() - 1:
+                labels_shaped = labels.unsqueeze(-1)
+            else:
+                labels_shaped = labels.view_as(preds)
+            loss = F.mse_loss(preds, labels_shaped)
+
+        loss.backward()
+        _check_nan(loss, f"GSP MSE loss at step {networks['learn_step_counter']}")
+        networks['actor'].optimizer.step()
+        networks['learn_step_counter'] += 1
+        return loss.item()
+
     def decrement_epsilon(self):
         self.epsilon = max(self.epsilon-self.eps_dec, self.eps_min)
 
