@@ -85,6 +85,29 @@ class TestGSPLossExposure:
         assert actor.last_gsp_loss is not None
         assert isinstance(actor.last_gsp_loss, float)
 
+    def test_last_gsp_loss_resets_between_ticks(self):
+        """Each learn() call starts by resetting last_gsp_loss to None.
+
+        This is the load-bearing invariant of the field: consumers must be able to read
+        it after learn() and distinguish "no GSP step ran this tick" (None) from
+        "GSP step ran and returned a value" (float). If the reset fails, a stale value
+        from a previous tick bleeds into the current tick's reading.
+        """
+        actor = make_gsp_actor()
+        fill_primary_and_gsp_buffers(actor)
+        actor.learn()
+        assert actor.last_gsp_loss is not None  # populated after first learn
+
+        # Drain the GSP replay buffer below the batch size so the next learn_gsp early-returns.
+        # Simulate by swapping in an empty gsp replay buffer. This is a white-box probe of the
+        # reset invariant rather than a full end-to-end run.
+        actor.gsp_networks['replay'].mem_ctr = 0
+
+        actor.learn()
+        assert actor.last_gsp_loss is None, (
+            "last_gsp_loss should reset to None when learn() runs but no GSP step fires"
+        )
+
     def test_last_gsp_loss_remains_none_when_gsp_disabled(self):
         """Non-GSP actor never populates last_gsp_loss."""
         actor = Actor(
