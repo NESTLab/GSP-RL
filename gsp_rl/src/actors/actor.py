@@ -449,22 +449,25 @@ class Actor(NetworkAids):
     def learn_gsp(self):
         if self.gsp_networks['replay'].mem_ctr < self.gsp_batch_size:
                 return
-        # Capture the inner learn call's loss so callers can observe the GSP prediction
-        # network's training loss directly (needed for the information-collapse diagnostic).
+        # HISTORICAL NOTE: this used to dispatch to learn_DDPG / learn_RDDPG /
+        # learn_TD3 with gsp=True for non-attention variants, training the GSP
+        # predictor as a DDPG actor-critic on a clipped negative-MSE reward.
+        # That produced an information-collapsed predictor whose output was
+        # empirically worse than predicting the constant mean. Replaced on
+        # 2026-04-13 with direct supervised MSE for all non-attention variants.
+        # See Stelaris docs/research/2026-04-13-gsp-information-collapse-analysis.md
+        # for root cause analysis.
         loss = None
-        if self.gsp_networks['learning_scheme'] in {'DDPG'}:
-            loss = self.learn_DDPG(self.gsp_networks, self.gsp, self.recurrent_gsp)
-        elif self.gsp_networks['learning_scheme'] in {'RDDPG'}:
-            loss = self.learn_RDDPG(self.gsp_networks, self.gsp, self.recurrent_gsp)
-        elif self.gsp_networks['learning_scheme'] == 'TD3':
-            loss = self.learn_TD3(self.gsp_networks, self.gsp, self.recurrent_gsp)
-        elif self.gsp_networks['learning_scheme'] == 'attention':
+        scheme = self.gsp_networks['learning_scheme']
+        if scheme == 'attention':
             loss = self.learn_attention(self.gsp_networks)
+        elif scheme == 'RDDPG':
+            loss = self.learn_gsp_mse(self.gsp_networks, recurrent=True)
+        elif scheme in {'DDPG', 'TD3'}:
+            loss = self.learn_gsp_mse(self.gsp_networks, recurrent=False)
         if loss is not None:
-            # TD3's non-actor-update steps return (0, 0) (critic stepped, actor did not).
-            # Recording a legitimate 0.0 there would produce false collapse signals every
-            # `update_actor_iter - 1` ticks, so skip those entries entirely — leave
-            # last_gsp_loss at None as if no GSP step ran this tick.
+            # Keep the tuple-skip guard for safety in case learn_attention's
+            # return type ever changes; learn_gsp_mse returns a plain float.
             if isinstance(loss, tuple):
                 return
             self.last_gsp_loss = float(loss)
