@@ -112,6 +112,12 @@ class Actor(NetworkAids):
             if attention:
                 self.build_gsp_network('attention')
             self.build_gsp_network('DDPG')
+
+        # Information-collapse diagnostic: last GSP prediction network training loss.
+        # Populated by learn_gsp() whenever a GSP learning step fires; reset to None at the
+        # start of each learn() call so callers can distinguish "no GSP step this tick" from
+        # "GSP step ran".
+        self.last_gsp_loss: float | None = None
             
     def build_networks(self, learning_scheme):
         if learning_scheme == 'None':
@@ -402,8 +408,11 @@ class Actor(NetworkAids):
                 f"Use choose_action() for RDDPG/attention networks.")
 
     def learn(self):
+        # Reset per-tick GSP loss signal. None means "no GSP step ran this tick".
+        self.last_gsp_loss = None
+
         # TODO Not sure why we have n_agents*batch_size + batch_size
-        if self.networks['replay'].mem_ctr < self.batch_size: # (self.n_agents*self.batch_size + self.batch_size): 
+        if self.networks['replay'].mem_ctr < self.batch_size: # (self.n_agents*self.batch_size + self.batch_size):
                 return
 
         if self.gsp:
@@ -431,14 +440,22 @@ class Actor(NetworkAids):
     def learn_gsp(self):
         if self.gsp_networks['replay'].mem_ctr < self.gsp_batch_size:
                 return
+        # Capture the inner learn call's loss so callers can observe the GSP prediction
+        # network's training loss directly (needed for the information-collapse diagnostic).
+        loss = None
         if self.gsp_networks['learning_scheme'] in {'DDPG'}:
-            self.learn_DDPG(self.gsp_networks, self.gsp, self.recurrent_gsp)
+            loss = self.learn_DDPG(self.gsp_networks, self.gsp, self.recurrent_gsp)
         elif self.gsp_networks['learning_scheme'] in {'RDDPG'}:
-            self.learn_RDDPG(self.gsp_networks, self.gsp, self.recurrent_gsp)
+            loss = self.learn_RDDPG(self.gsp_networks, self.gsp, self.recurrent_gsp)
         elif self.gsp_networks['learning_scheme'] == 'TD3':
-            self.learn_TD3(self.gsp_networks, self.gsp, self.recurrent_gsp)
+            loss = self.learn_TD3(self.gsp_networks, self.gsp, self.recurrent_gsp)
         elif self.gsp_networks['learning_scheme'] == 'attention':
-            self.learn_attention(self.gsp_networks)
+            loss = self.learn_attention(self.gsp_networks)
+        if loss is not None:
+            # TD3's edge-case path returns (0, 0); normalize to a scalar for logging.
+            if isinstance(loss, tuple):
+                loss = loss[0]
+            self.last_gsp_loss = float(loss)
 
     def store_agent_transition(self, s, a, r, s_, d):
         self.store_transition(s, a, r, s_, d, self.networks)
